@@ -1,0 +1,24 @@
+name: label_widgets_example
+description: >
+  Playground manual dos componentes de label_widgets — galeria de botões,
+  seletor de cor e réguas, usada para verificação visual durante o
+  desenvolvimento. Não é código destinado ao usuário final.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  label_widgets:
+    path: ../
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
