@@ -378,6 +378,8 @@ classDiagram
 
 **Decisão importante**: `ResolvedDocument`/`ResolvedElement`/`ResolvedPayload` são definidos como *tipos de dados* dentro de `label_core` (não dentro de `label_layout_engine`). Isso permite que `label_renderer` e suas implementações dependam apenas de `label_core` — o contrato de dados — sem precisar depender do motor que o produz. É Dependency Inversion aplicado entre camadas: o pacote `label_layout_engine` depende de `label_core` para *produzir* o tipo; os renderers dependem de `label_core` para *consumir* o tipo. Nenhum dos dois depende do outro.
 
+O diagrama acima é ilustrativo, não exaustivo — a implementação real (Etapa 4) tem 5 subtipos de `ResolvedPayload`, não 4: `ResolvedQrCodePayload` existe separado de `ResolvedBarcodePayload` porque `QRCodeElement` tem campos genuinamente diferentes (`errorCorrectionLevel` em vez de `symbology`/`showText`). Além disso, `ResolvedTextPayload.style` e `ResolvedShapePayload.style` usam `ResolvedTextStyle`/`ResolvedShapeStyle` — não `TextStyleSpec`/`ShapeStyleSpec` (os tipos de edição, em milímetros) — justamente para que o compilador impeça um renderer de receber `fontSize`/`strokeWidth` em mm por engano.
+
 Responsabilidades detalhadas:
 
 - Resolver `{{ variavel }}` e expressões via `label_expression_engine`.
@@ -453,6 +455,8 @@ classDiagram
 - Novo renderer (ex.: `BrotherRenderer`) = novo pacote `label_renderer_brother`, implementando `BaseRenderer`, sem tocar em nenhum pacote existente (**Open/Closed Principle**).
 - `label_renderer_argox` cobre PPLA e PPLB como duas `RendererOptions.dialect` diferentes dentro do mesmo pacote (compartilham 90% da lógica Argox), evitando um pacote por dialeto.
 - `RendererOptions` carrega parâmetros específicos do renderer (ex.: `darkness`, `speed`, `dialect`) sem contaminar `ResolvedDocument`.
+
+> **Ajuste feito na Etapa 6**: `BaseRenderer` como um único Template Method de string (`header`/`encodeElement`/`footer` retornando `String`) faz sentido para os renderers de comando textual (Argox/Zebra/TSC, a serem implementados). Ele **não** se aplica a `CanvasRenderer`, que pinta em um canvas raster (`dart:ui`), não concatena strings — forçar a mesma forma abstrata seria uma abstração artificial. `label_renderer` continua com **apenas** a interface `LabelRenderer` (o contrato real, não-negociável); um `BaseRenderer` de Template Method específico para renderers baseados em comando textual será introduzido quando `label_renderer_argox` for implementado (etapa futura), sem afetar `CanvasRenderer`. `CanvasRenderer` implementa `LabelRenderer` diretamente, com seu próprio `switch` exaustivo sobre `ResolvedPayload` (sealed) para despachar a pintura por tipo — dispensa uma interface Visitor formal já que há um único consumidor.
 
 ## 12. Formato de Template (.label)
 
@@ -723,6 +727,7 @@ O envio físico dos bytes para a impressora (USB/rede/Bluetooth) é responsabili
 - Dart 3 (`sealed class`, pattern matching) em todo o domínio.
 - Nenhum pacote de domínio (`label_core`, `label_expression_engine`, `label_layout_engine`, `label_history`, `label_serialization`, `label_barcode`) importa `package:flutter`.
 - Sem arquivos "deus": qualquer classe que ultrapasse ~300 linhas é candidata a ser dividida antes de seguir para a próxima etapa do roadmap.
+- Pacotes que importam `package:flutter` (ex.: `label_renderer_canvas`, e futuramente `label_canvas`/`label_widgets`/`label_property_panel`/`label_preview`/`label_designer`) são testados com `flutter test`, não `dart test` — use `melos run test` para os pacotes Dart puro e `melos run test:flutter` para os pacotes Flutter.
 
 ---
 

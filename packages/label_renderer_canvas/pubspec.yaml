@@ -1,0 +1,32 @@
+name: label_renderer_canvas
+description: >
+  Renderer que converte um ResolvedDocument em PNG/JPEG, usando dart:ui
+  para tipografia real (TTF, negrito/itálico). Usado tanto para
+  exportação raster quanto como base do preview do editor.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.8.1
+  flutter: ">=3.32.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  label_barcode:
+    path: ../label_barcode
+  label_core:
+    path: ../label_core
+  label_renderer:
+    path: ../label_renderer
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  # Dev-only: exercises the full LabelDocument -> ResolvedDocument -> PNG
+  # pipeline in test/end_to_end_test.dart. Production code in lib/ never
+  # imports label_layout_engine — a renderer only ever consumes an
+  # already-resolved ResolvedDocument.
+  label_layout_engine:
+    path: ../label_layout_engine
+  lints: ^5.0.0
