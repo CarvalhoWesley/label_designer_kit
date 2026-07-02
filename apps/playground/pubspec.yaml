@@ -1,0 +1,30 @@
+name: playground
+description: >
+  Sandbox interno para validar o pipeline completo (LabelDesigner +
+  label_serialization + label_layout_engine + label_renderer_canvas)
+  manualmente durante o desenvolvimento. Não é um entregável — o projeto
+  do usuário nunca importa este pacote. Ver docs/ARCHITECTURE.md, seção 4.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.8.1
+  flutter: ">=3.32.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  label_core:
+    path: ../../packages/label_core
+  label_designer:
+    path: ../../packages/label_designer
+  label_serialization:
+    path: ../../packages/label_serialization
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
