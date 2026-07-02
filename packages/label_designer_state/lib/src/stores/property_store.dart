@@ -58,4 +58,37 @@ abstract class PropertyStoreBase with Store {
       ),
     );
   }
+
+  /// Applies the same kind of property edit across every id in
+  /// [oldValues]/[newValues] as a single undo step — used by
+  /// `label_property_panel` when editing a shared property (e.g. opacity,
+  /// visible) across a multi-element selection, mirroring
+  /// `HistoryStore.moveElements`.
+  ///
+  /// [oldValues] and [newValues] must have the same keys (element ids).
+  /// Ids whose value did not change are skipped.
+  void changeProperties<T>({
+    required Map<String, T> oldValues,
+    required Map<String, T> newValues,
+    required LabelElement Function(LabelElement element, T value) apply,
+  }) {
+    assert(
+      oldValues.keys.toSet().containsAll(newValues.keys),
+      'oldValues/newValues must cover the same element ids',
+    );
+    final commands = [
+      for (final id in newValues.keys)
+        if (oldValues[id] != newValues[id])
+          ChangePropertyCommand<T>(
+            elementId: id,
+            oldValue: oldValues[id] as T,
+            newValue: newValues[id] as T,
+            apply: apply,
+          ),
+    ];
+    if (commands.isEmpty) return;
+    _historyStore.execute(
+      commands.length == 1 ? commands.single : CompositeCommand(commands),
+    );
+  }
 }

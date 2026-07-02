@@ -93,4 +93,65 @@ void main() {
       expect(reverted.content, 'Antes');
     },
   );
+
+  test(
+    'changeProperties applies an edit across ids as a single undo step',
+    () {
+      final s = _setup();
+      s.property.changeProperties<double>(
+        oldValues: {'t-1': 1, 'r-1': 1},
+        newValues: {'t-1': 0.5, 'r-1': 0.5},
+        apply: (element, value) => switch (element) {
+          TextElement e => e.copyWith(opacity: value),
+          RectangleElement e => e.copyWith(opacity: value),
+          _ => throw StateError('unexpected element type'),
+        },
+      );
+
+      expect(
+        s.document.elements.map((e) => e.opacity),
+        everyElement(0.5),
+      );
+      expect(s.history.canUndo, isTrue);
+
+      s.history.undo();
+      expect(s.document.elements.map((e) => e.opacity), everyElement(1));
+    },
+  );
+
+  test('changeProperties skips ids whose value did not change', () {
+    final s = _setup();
+    s.property.changeProperties<double>(
+      oldValues: {'t-1': 1, 'r-1': 1},
+      newValues: {'t-1': 1, 'r-1': 0.5},
+      apply: (element, value) => switch (element) {
+        TextElement e => e.copyWith(opacity: value),
+        RectangleElement e => e.copyWith(opacity: value),
+        _ => throw StateError('unexpected element type'),
+      },
+    );
+
+    // A single changed id dispatches a plain ChangePropertyCommand (not
+    // wrapped in a CompositeCommand), so one undo fully reverts it.
+    s.history.undo();
+    expect(
+      s.document.elements.map((e) => e.opacity),
+      everyElement(1),
+    );
+  });
+
+  test('changeProperties with no actual changes is a no-op', () {
+    final s = _setup();
+    s.property.changeProperties<double>(
+      oldValues: {'t-1': 1, 'r-1': 1},
+      newValues: {'t-1': 1, 'r-1': 1},
+      apply: (element, value) => switch (element) {
+        TextElement e => e.copyWith(opacity: value),
+        RectangleElement e => e.copyWith(opacity: value),
+        _ => throw StateError('unexpected element type'),
+      },
+    );
+
+    expect(s.history.canUndo, isFalse);
+  });
 }
