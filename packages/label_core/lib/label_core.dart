@@ -19,5 +19,8 @@ export 'src/elements/text_style_spec.dart';
 export 'src/geometry/edge_insets.dart';
 export 'src/geometry/point.dart';
 export 'src/geometry/size2d.dart';
+export 'src/layout/resolved_document.dart';
+export 'src/layout/resolved_element.dart';
+export 'src/layout/resolved_payload.dart';
 export 'src/units/dpi.dart';
 export 'src/units/unit.dart';

@@ -1,0 +1,21 @@
+name: label_layout_engine
+description: >
+  Resolve variáveis/expressões, referências de estilo, milímetros -> dots,
+  DPI, rotações e grupos, produzindo um ResolvedDocument pronto para
+  qualquer LabelRenderer. Pacote Dart puro; nenhum renderer recalcula
+  layout.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  label_core:
+    path: ../label_core
+  label_expression_engine:
+    path: ../label_expression_engine
+
+dev_dependencies:
+  lints: ^5.0.0
+  test: ^1.24.0
