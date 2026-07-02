@@ -276,4 +276,19 @@ void main() {
     historyStore.undo(); // undoes the add
     expect(documentStore.elements, isEmpty);
   });
+
+  test('replaceElements swaps the element list as a single undo step', () {
+    final documentStore = DocumentStore(
+      LabelDocument.blank(name: 'Doc').copyWith(elements: [_rect('a')]),
+    );
+    final historyStore = HistoryStore(documentStore);
+
+    historyStore.replaceElements([_rect('b'), _rect('c')]);
+
+    expect(documentStore.elements.map((e) => e.id), ['b', 'c']);
+    expect(historyStore.canUndo, isTrue);
+
+    historyStore.undo();
+    expect(documentStore.elements.map((e) => e.id), ['a']);
+  });
 }

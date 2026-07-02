@@ -144,6 +144,23 @@ abstract class HistoryStoreBase with Store {
   void deleteElement(String elementId) =>
       execute(DeleteCommand.capture(_documentStore.document, elementId));
 
+  /// Replaces the whole top-level element list as a single undo step —
+  /// used by `label_designer` for operations that restructure the element
+  /// list itself rather than editing one element's fields: grouping/
+  /// ungrouping (replacing N siblings with one `GroupElement`, or vice
+  /// versa) and reordering `zIndex` for bring-to-front/send-to-back.
+  /// Mirrors [LayerStore]'s internal `_updateLayer`, which does the same
+  /// for `document.layers`.
+  void replaceElements(List<LabelElement> newElements) {
+    execute(
+      ChangeDocumentCommand<List<LabelElement>>(
+        oldValue: _documentStore.elements,
+        newValue: newElements,
+        apply: (document, value) => document.copyWith(elements: value),
+      ),
+    );
+  }
+
   /// Convenience wrapper: encodes the current document via
   /// [label_serialization]. Writing the result to disk is the consuming
   /// app's responsibility (see `docs/ARCHITECTURE.md` section 20).
