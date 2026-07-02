@@ -79,6 +79,19 @@ void main() {
       expect(decoded.styles, isEmpty);
       expect(decoded.variables, isEmpty);
       expect(decoded.elements, isEmpty);
+      expect(decoded.metadata.history, isEmpty);
+    });
+  });
+
+  group('DocumentMetadata', () {
+    test('round-trips history entries through JSON', () {
+      final now = DateTime.utc(2026, 7, 2);
+      final metadata = DocumentMetadata(
+        createdAt: now,
+        updatedAt: now,
+        history: const ['v1 criado por carvalho.wesley@g3soft.com.br'],
+      );
+      expect(DocumentMetadata.fromJson(metadata.toJson()), metadata);
     });
   });
 

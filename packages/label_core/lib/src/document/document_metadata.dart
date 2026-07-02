@@ -8,6 +8,7 @@ class DocumentMetadata extends Equatable {
     required this.createdAt,
     required this.updatedAt,
     this.thumbnailBase64,
+    this.history = const [],
   });
 
   factory DocumentMetadata.fromJson(Map<String, dynamic> json) {
@@ -16,6 +17,9 @@ class DocumentMetadata extends Equatable {
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       thumbnailBase64: json['thumbnail'] as String?,
+      history: (json['history'] as List<dynamic>? ?? [])
+          .map((entry) => entry as String)
+          .toList(),
     );
   }
 
@@ -27,17 +31,24 @@ class DocumentMetadata extends Equatable {
   /// when the document is saved. `null` until first save.
   final String? thumbnailBase64;
 
+  /// Free-form save log, e.g. `"v1 salvo por fulano em 2026-07-02"`.
+  /// This is a persisted audit trail, distinct from the in-memory
+  /// undo/redo stack owned by `label_history` at edit time.
+  final List<String> history;
+
   DocumentMetadata copyWith({
     String? author,
     DateTime? createdAt,
     DateTime? updatedAt,
     String? thumbnailBase64,
+    List<String>? history,
   }) {
     return DocumentMetadata(
       author: author ?? this.author,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       thumbnailBase64: thumbnailBase64 ?? this.thumbnailBase64,
+      history: history ?? this.history,
     );
   }
 
@@ -46,8 +57,15 @@ class DocumentMetadata extends Equatable {
     'createdAt': createdAt.toUtc().toIso8601String(),
     'updatedAt': updatedAt.toUtc().toIso8601String(),
     if (thumbnailBase64 != null) 'thumbnail': thumbnailBase64,
+    'history': history,
   };
 
   @override
-  List<Object?> get props => [author, createdAt, updatedAt, thumbnailBase64];
+  List<Object?> get props => [
+    author,
+    createdAt,
+    updatedAt,
+    thumbnailBase64,
+    history,
+  ];
 }

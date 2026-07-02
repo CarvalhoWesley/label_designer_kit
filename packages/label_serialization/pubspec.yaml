@@ -1,0 +1,18 @@
+name: label_serialization
+description: >
+  Codec entre o formato .label (JSON) e LabelDocument, com pipeline de
+  migração versionada. Pacote Dart puro: não lê/escreve arquivos, apenas
+  converte String/Map <-> LabelDocument.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  label_core:
+    path: ../label_core
+
+dev_dependencies:
+  lints: ^5.0.0
+  test: ^1.24.0
