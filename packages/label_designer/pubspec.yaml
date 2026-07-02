@@ -1,0 +1,35 @@
+name: label_designer
+description: >
+  Composição do editor completo: toolbar, painel de camadas, painel de
+  propriedades, preview e atalhos de teclado, ligados a
+  label_designer_state. Não sabe salvar em disco nem imprimir — isso é do
+  projeto que consome este pacote. Ver docs/ARCHITECTURE.md, seção 7.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.8.1
+  flutter: ">=3.32.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  label_core:
+    path: ../label_core
+  label_canvas:
+    path: ../label_canvas
+  label_designer_state:
+    path: ../label_designer_state
+  label_preview:
+    path: ../label_preview
+  label_property_panel:
+    path: ../label_property_panel
+  label_widgets:
+    path: ../label_widgets
+  flutter_mobx: ^2.3.0
+  mobx: ^2.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  lints: ^5.0.0
