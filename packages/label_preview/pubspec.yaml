@@ -1,0 +1,29 @@
+name: label_preview
+description: >
+  Preview ao vivo: LabelDocument -> LabelLayoutEngine -> CanvasRenderer ->
+  Image.memory. Usa exatamente o mesmo motor de layout e o mesmo renderer
+  usados na exportação PNG/JPEG, então o preview nunca diverge do
+  resultado real de impressão. Ver docs/ARCHITECTURE.md, seção 16.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.8.1
+  flutter: ">=3.32.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  label_core:
+    path: ../label_core
+  label_layout_engine:
+    path: ../label_layout_engine
+  label_renderer:
+    path: ../label_renderer
+  label_renderer_canvas:
+    path: ../label_renderer_canvas
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  lints: ^5.0.0
