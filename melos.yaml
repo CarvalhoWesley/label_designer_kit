@@ -1,0 +1,22 @@
+name: label_designer_workspace
+
+packages:
+  - packages/**
+  - apps/**
+
+command:
+  bootstrap:
+    runPubGetInParallel: true
+
+scripts:
+  analyze:
+    run: melos exec -- dart analyze --fatal-infos .
+    description: Run dart analyze in all packages.
+
+  format:
+    run: melos exec -- dart format --set-exit-if-changed .
+    description: Check formatting in all packages.
+
+  test:
+    run: melos exec --dir-exists=test -- dart test
+    description: Run tests in all packages that have a test/ directory.

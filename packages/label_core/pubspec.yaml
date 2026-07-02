@@ -1,0 +1,17 @@
+name: label_core
+description: >
+  Modelos de domínio do Label Designer Framework: LabelDocument, LabelElement
+  e subtipos, value objects de geometria e unidades. Pacote Dart puro, sem
+  dependência de Flutter, impressoras ou renderização.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  equatable: ^2.0.5
+
+dev_dependencies:
+  lints: ^5.0.0
+  test: ^1.24.0
