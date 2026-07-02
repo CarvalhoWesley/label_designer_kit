@@ -180,7 +180,7 @@ void main() {
       final payload =
           engine.resolve(document, {}).elements.single.payload
               as ResolvedTextPayload;
-      expect(payload.style.fontSize, 6);
+      expect(payload.style.fontSizeDots, Dpi.dpi203.mmToDots(6));
       expect(payload.style.bold, true);
     });
 
@@ -202,7 +202,7 @@ void main() {
       final payload =
           engine.resolve(document, {}).elements.single.payload
               as ResolvedTextPayload;
-      expect(payload.style.fontSize, 9);
+      expect(payload.style.fontSizeDots, Dpi.dpi203.mmToDots(9));
     });
   });
 
@@ -414,27 +414,30 @@ void main() {
       expect(payload.cornerRadiusDots, Dpi.dpi203.mmToDots(2));
     });
 
-    test('LineElement folds strokeColor/strokeWidth into a ShapeStyleSpec', () {
-      final document = _documentWith(
-        elements: const [
-          LineElement(
-            id: 'el-1',
-            name: 'Linha',
-            position: Point(x: 0, y: 0),
-            size: Size2D(width: 10, height: 0),
-            layerId: 'layer-1',
-            strokeColor: 0xFFFF0000,
-            strokeWidth: 0.8,
-          ),
-        ],
-      );
-      final payload =
-          engine.resolve(document, {}).elements.single.payload
-              as ResolvedShapePayload;
-      expect(payload.kind, ShapeKind.line);
-      expect(payload.style.strokeColor, 0xFFFF0000);
-      expect(payload.style.strokeWidth, 0.8);
-    });
+    test(
+      'LineElement folds strokeColor/strokeWidth into a ResolvedShapeStyle',
+      () {
+        final document = _documentWith(
+          elements: const [
+            LineElement(
+              id: 'el-1',
+              name: 'Linha',
+              position: Point(x: 0, y: 0),
+              size: Size2D(width: 10, height: 0),
+              layerId: 'layer-1',
+              strokeColor: 0xFFFF0000,
+              strokeWidth: 0.8,
+            ),
+          ],
+        );
+        final payload =
+            engine.resolve(document, {}).elements.single.payload
+                as ResolvedShapePayload;
+        expect(payload.kind, ShapeKind.line);
+        expect(payload.style.strokeColor, 0xFFFF0000);
+        expect(payload.style.strokeWidthDots, Dpi.dpi203.mmToDots(0.8));
+      },
+    );
   });
 
   group('TableElement', () {

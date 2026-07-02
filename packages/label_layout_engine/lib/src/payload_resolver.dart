@@ -51,7 +51,7 @@ class PayloadResolver implements LabelElementVisitor<ResolvedPayload?> {
     );
     return ResolvedTextPayload(
       text: _formatDateTimeValue(value, element.format),
-      style: element.style,
+      style: _convertTextStyle(element.style),
     );
   }
 
@@ -64,7 +64,7 @@ class PayloadResolver implements LabelElementVisitor<ResolvedPayload?> {
     );
     return ResolvedTextPayload(
       text: _formatDateTimeValue(value, element.format),
-      style: element.style,
+      style: _convertTextStyle(element.style),
     );
   }
 
@@ -104,28 +104,36 @@ class PayloadResolver implements LabelElementVisitor<ResolvedPayload?> {
   ResolvedPayload visitRectangle(RectangleElement element) {
     return ResolvedShapePayload(
       kind: ShapeKind.rectangle,
-      style: element.style,
+      style: _convertShapeStyle(element.style),
       cornerRadiusDots: dpi.mmToDots(element.cornerRadius),
     );
   }
 
   @override
   ResolvedPayload visitEllipse(EllipseElement element) {
-    return ResolvedShapePayload(kind: ShapeKind.ellipse, style: element.style);
+    return ResolvedShapePayload(
+      kind: ShapeKind.ellipse,
+      style: _convertShapeStyle(element.style),
+    );
   }
 
   @override
   ResolvedPayload visitCircle(CircleElement element) {
-    return ResolvedShapePayload(kind: ShapeKind.circle, style: element.style);
+    return ResolvedShapePayload(
+      kind: ShapeKind.circle,
+      style: _convertShapeStyle(element.style),
+    );
   }
 
   @override
   ResolvedPayload visitLine(LineElement element) {
     return ResolvedShapePayload(
       kind: ShapeKind.line,
-      style: ShapeStyleSpec(
-        strokeColor: element.strokeColor,
-        strokeWidth: element.strokeWidth,
+      style: _convertShapeStyle(
+        ShapeStyleSpec(
+          strokeColor: element.strokeColor,
+          strokeWidth: element.strokeWidth,
+        ),
       ),
     );
   }
@@ -146,12 +154,35 @@ class PayloadResolver implements LabelElementVisitor<ResolvedPayload?> {
     );
   }
 
-  TextStyleSpec _resolveTextStyle(String? styleId, TextStyleSpec inlineStyle) {
-    if (styleId == null) return inlineStyle;
+  ResolvedTextStyle _resolveTextStyle(
+    String? styleId,
+    TextStyleSpec inlineStyle,
+  ) {
+    if (styleId == null) return _convertTextStyle(inlineStyle);
     for (final style in document.styles) {
-      if (style.id == styleId) return style.spec;
+      if (style.id == styleId) return _convertTextStyle(style.spec);
     }
-    return inlineStyle;
+    return _convertTextStyle(inlineStyle);
+  }
+
+  ResolvedTextStyle _convertTextStyle(TextStyleSpec spec) {
+    return ResolvedTextStyle(
+      fontFamily: spec.fontFamily,
+      fontSizeDots: dpi.mmToDots(spec.fontSize),
+      bold: spec.bold,
+      italic: spec.italic,
+      underline: spec.underline,
+      color: spec.color,
+      alignment: spec.alignment,
+    );
+  }
+
+  ResolvedShapeStyle _convertShapeStyle(ShapeStyleSpec spec) {
+    return ResolvedShapeStyle(
+      strokeColor: spec.strokeColor,
+      strokeWidthDots: dpi.mmToDots(spec.strokeWidth),
+      fillColor: spec.fillColor,
+    );
   }
 
   Object? _resolveDateTimeSource({

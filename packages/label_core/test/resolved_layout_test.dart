@@ -1,12 +1,27 @@
 import 'package:label_core/label_core.dart';
 import 'package:test/test.dart';
 
+const _textStyle = ResolvedTextStyle(
+  fontFamily: 'Roboto',
+  fontSizeDots: 20,
+  bold: false,
+  italic: false,
+  underline: false,
+  color: 0xFF000000,
+  alignment: TextAlignment.left,
+);
+
+const _shapeStyle = ResolvedShapeStyle(
+  strokeColor: 0xFF000000,
+  strokeWidthDots: 2,
+);
+
 void main() {
   group('ResolvedPayload subtypes', () {
     test('ResolvedTextPayload has value equality', () {
-      const a = ResolvedTextPayload(text: 'Parafuso', style: TextStyleSpec());
-      const b = ResolvedTextPayload(text: 'Parafuso', style: TextStyleSpec());
-      const c = ResolvedTextPayload(text: 'Outro', style: TextStyleSpec());
+      const a = ResolvedTextPayload(text: 'Parafuso', style: _textStyle);
+      const b = ResolvedTextPayload(text: 'Parafuso', style: _textStyle);
+      const c = ResolvedTextPayload(text: 'Outro', style: _textStyle);
       expect(a, b);
       expect(a, isNot(c));
     });
@@ -22,10 +37,24 @@ void main() {
       expect(payload.moduleWidthDots, 3);
     });
 
+    test('ResolvedTextStyle carries fontSize already converted to dots', () {
+      const style = ResolvedTextStyle(
+        fontFamily: 'Roboto',
+        fontSizeDots: 32,
+        bold: true,
+        italic: false,
+        underline: false,
+        color: 0xFF000000,
+        alignment: TextAlignment.center,
+      );
+      expect(style.fontSizeDots, isA<int>());
+      expect(style.fontSizeDots, 32);
+    });
+
     test('ResolvedShapePayload defaults cornerRadiusDots to 0', () {
       const payload = ResolvedShapePayload(
         kind: ShapeKind.ellipse,
-        style: ShapeStyleSpec(),
+        style: _shapeStyle,
       );
       expect(payload.cornerRadiusDots, 0);
     });
@@ -47,10 +76,7 @@ void main() {
             rotationDegrees: 0,
             zIndex: 0,
             opacity: 1,
-            payload: ResolvedTextPayload(
-              text: 'Parafuso',
-              style: TextStyleSpec(),
-            ),
+            payload: ResolvedTextPayload(text: 'Parafuso', style: _textStyle),
           ),
         ],
       );
@@ -71,7 +97,7 @@ void main() {
         opacity: 1,
         payload: ResolvedShapePayload(
           kind: ShapeKind.rectangle,
-          style: ShapeStyleSpec(),
+          style: _shapeStyle,
         ),
       );
       const elementB = ResolvedElement(
@@ -85,7 +111,7 @@ void main() {
         opacity: 1,
         payload: ResolvedShapePayload(
           kind: ShapeKind.rectangle,
-          style: ShapeStyleSpec(),
+          style: _shapeStyle,
         ),
       );
       expect(elementA, elementB);

@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../elements/label_element.dart';
-import '../elements/text_style_spec.dart';
+import '../elements/text_style_spec.dart' show TextAlignment;
 
 /// The kind of primitive shape a [ResolvedShapePayload] represents.
 ///
@@ -10,6 +10,63 @@ import '../elements/text_style_spec.dart';
 /// from the same bounding box + style — only the drawing primitive
 /// differs.
 enum ShapeKind { rectangle, ellipse, circle, line }
+
+/// [TextStyleSpec] with every millimeter measurement converted to dots by
+/// the Layout Engine.
+///
+/// Kept as its own type instead of reusing `TextStyleSpec` directly so a
+/// renderer can never accidentally receive a millimeter value — the
+/// framework-wide rule that only the Layout Engine knows about DPI/dots
+/// is enforced by the type system here, not just by convention.
+class ResolvedTextStyle extends Equatable {
+  const ResolvedTextStyle({
+    required this.fontFamily,
+    required this.fontSizeDots,
+    required this.bold,
+    required this.italic,
+    required this.underline,
+    required this.color,
+    required this.alignment,
+  });
+
+  final String fontFamily;
+  final int fontSizeDots;
+  final bool bold;
+  final bool italic;
+  final bool underline;
+
+  /// ARGB color, e.g. `0xFF000000` for opaque black.
+  final int color;
+  final TextAlignment alignment;
+
+  @override
+  List<Object?> get props => [
+    fontFamily,
+    fontSizeDots,
+    bold,
+    italic,
+    underline,
+    color,
+    alignment,
+  ];
+}
+
+/// [ShapeStyleSpec] with `strokeWidth` converted from millimeters to dots.
+/// See [ResolvedTextStyle] for why this is a distinct type.
+class ResolvedShapeStyle extends Equatable {
+  const ResolvedShapeStyle({
+    required this.strokeColor,
+    required this.strokeWidthDots,
+    this.fillColor,
+  });
+
+  final int strokeColor;
+  final int strokeWidthDots;
+  final int? fillColor;
+
+  @override
+  List<Object?> get props => [strokeColor, strokeWidthDots, fillColor];
+}
 
 /// The type-specific, fully-resolved content of a [ResolvedElement].
 ///
@@ -27,7 +84,7 @@ class ResolvedTextPayload extends ResolvedPayload {
   const ResolvedTextPayload({required this.text, required this.style});
 
   final String text;
-  final TextStyleSpec style;
+  final ResolvedTextStyle style;
 
   @override
   List<Object?> get props => [text, style];
@@ -105,7 +162,7 @@ class ResolvedShapePayload extends ResolvedPayload {
   });
 
   final ShapeKind kind;
-  final ShapeStyleSpec style;
+  final ResolvedShapeStyle style;
 
   /// Only meaningful when [kind] is [ShapeKind.rectangle].
   final int cornerRadiusDots;
