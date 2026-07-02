@@ -1,0 +1,14 @@
+name: label_expression_engine
+description: >
+  Parser e avaliador desacoplado de expressões ({{ preco * quantidade }},
+  {{ estoque == 0 ? "SEM ESTOQUE" : "" }}, {{ data.format("dd/MM/yyyy") }}).
+  Pacote Dart puro, sem dependência de label_core, Flutter ou impressoras.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.8.1
+
+dev_dependencies:
+  lints: ^5.0.0
+  test: ^1.24.0
