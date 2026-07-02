@@ -1,0 +1,29 @@
+name: label_canvas
+description: >
+  Editor visual (CustomPainter): selecionar, mover, redimensionar, girar,
+  zoom/pan, grid/snap. Desenha uma representação editável direta do
+  LabelDocument — nunca usa label_layout_engine nem nenhum
+  label_renderer_*. Ver docs/ARCHITECTURE.md, seção 15.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.8.1
+  flutter: ">=3.32.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  label_core:
+    path: ../label_core
+  label_designer_state:
+    path: ../label_designer_state
+  label_widgets:
+    path: ../label_widgets
+  flutter_mobx: ^2.3.0
+  mobx: ^2.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  lints: ^5.0.0

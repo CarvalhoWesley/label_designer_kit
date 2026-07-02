@@ -1,0 +1,30 @@
+name: label_canvas_example
+description: >
+  Playground manual do label_canvas — documento de exemplo com vários
+  tipos de elemento, para verificação visual de seleção, mover,
+  redimensionar, girar, zoom/pan e grid/snap durante o desenvolvimento.
+  Não é código destinado ao usuário final.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  label_canvas:
+    path: ../
+  label_core:
+    path: ../../label_core
+  label_designer_state:
+    path: ../../label_designer_state
+  flutter_mobx: ^2.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
