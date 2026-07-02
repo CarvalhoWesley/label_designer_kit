@@ -16,3 +16,4 @@ pubspec_overrides.yaml
 .fvmrc.local
 *.g.dart.bak
 coverage/
+.claude/settings.local.json
