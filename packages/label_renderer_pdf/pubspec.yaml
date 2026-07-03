@@ -1,0 +1,30 @@
+name: label_renderer_pdf
+description: >
+  Renderer que converte um ResolvedDocument em PDF vetorial (texto real,
+  formas e código de barras/QR como paths, não bitmap), usando package:pdf.
+  Dart puro, diferente de label_renderer_canvas.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  image: ^4.1.7
+  label_barcode:
+    path: ../label_barcode
+  label_core:
+    path: ../label_core
+  label_renderer:
+    path: ../label_renderer
+  pdf: ^3.11.1
+
+dev_dependencies:
+  # Dev-only: exercises the full LabelDocument -> ResolvedDocument -> PDF
+  # pipeline in test/end_to_end_test.dart. Production code in lib/ never
+  # imports label_layout_engine — a renderer only ever consumes an
+  # already-resolved ResolvedDocument.
+  label_layout_engine:
+    path: ../label_layout_engine
+  lints: ^5.0.0
+  test: ^1.24.0
