@@ -21,6 +21,7 @@ dependencies:
     path: ../label_widgets
   flutter_mobx: ^2.3.0
   mobx: ^2.5.0
+  file_picker: ^8.1.0
 
 dev_dependencies:
   flutter_test:

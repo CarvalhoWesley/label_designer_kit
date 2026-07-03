@@ -45,6 +45,8 @@ class DesignerToolbar extends StatelessWidget {
     required this.onSendToBack,
     required this.onDelete,
     required this.onDuplicate,
+    required this.onEditProperties,
+    required this.onFitToView,
     this.onSave,
   });
 
@@ -59,6 +61,8 @@ class DesignerToolbar extends StatelessWidget {
   final VoidCallback onSendToBack;
   final VoidCallback onDelete;
   final VoidCallback onDuplicate;
+  final VoidCallback onEditProperties;
+  final VoidCallback onFitToView;
   final VoidCallback? onSave;
 
   @override
@@ -75,6 +79,12 @@ class DesignerToolbar extends StatelessWidget {
             ),
             const VerticalDivider(width: 16),
           ],
+          LabelToolbarButton(
+            icon: Icons.settings_outlined,
+            tooltip: 'Propriedades da etiqueta',
+            onPressed: onEditProperties,
+          ),
+          const VerticalDivider(width: 16),
           Observer(
             builder: (context) => Row(
               children: [
@@ -173,10 +183,30 @@ class DesignerToolbar extends StatelessWidget {
                   onPressed: () => viewportStore.zoomBy(1.25),
                 ),
                 LabelToolbarButton(
+                  icon: Icons.fit_screen_outlined,
+                  tooltip: 'Ajustar à tela',
+                  onPressed: onFitToView,
+                ),
+                LabelToolbarButton(
                   icon: LabelIcons.grid,
                   tooltip: 'Grade',
                   selected: viewportStore.showGrid,
                   onPressed: viewportStore.toggleGrid,
+                ),
+                PopupMenuButton<double>(
+                  tooltip: 'Tamanho da grade',
+                  icon: const Icon(Icons.grid_4x4, size: 20),
+                  onSelected: viewportStore.setGridSize,
+                  itemBuilder: (context) => [
+                    for (final mm in const [0.5, 1.0, 2.0, 5.0, 10.0])
+                      CheckedPopupMenuItem(
+                        value: mm,
+                        checked: viewportStore.gridSizeMm == mm,
+                        child: Text(
+                          '${mm == mm.roundToDouble() ? mm.round() : mm}mm',
+                        ),
+                      ),
+                  ],
                 ),
                 LabelToolbarButton(
                   icon: LabelIcons.snap,

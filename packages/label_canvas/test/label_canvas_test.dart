@@ -42,6 +42,7 @@ class _Harness {
         viewportStore: viewportStore,
         canvasStore: canvasStore,
         showRulers: false,
+        fitToViewOnLoad: false,
       ),
     ),
   );

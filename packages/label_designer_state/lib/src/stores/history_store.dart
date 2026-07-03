@@ -161,6 +161,51 @@ abstract class HistoryStoreBase with Store {
     );
   }
 
+  /// Renames the document as a single undo step.
+  void renameDocument(String name) {
+    final command = _renameCommand(name);
+    if (command != null) execute(command);
+  }
+
+  /// Changes the document's page configuration (size, unit, dpi,
+  /// orientation, margins) as a single undo step.
+  void updatePageConfig(PageConfig page) {
+    final command = _pageConfigCommand(page);
+    if (command != null) execute(command);
+  }
+
+  /// Renames the document and/or changes its page configuration as one
+  /// undo step — used by the "document properties" dialog, where the user
+  /// edits both fields before pressing a single "Save".
+  void updateDocumentMeta({String? name, PageConfig? page}) {
+    final commands = [
+      if (name != null) _renameCommand(name),
+      if (page != null) _pageConfigCommand(page),
+    ].whereType<Command>().toList();
+    if (commands.isEmpty) return;
+    execute(
+      commands.length == 1 ? commands.single : CompositeCommand(commands),
+    );
+  }
+
+  ChangeDocumentCommand<String>? _renameCommand(String name) {
+    if (name == _documentStore.document.name) return null;
+    return ChangeDocumentCommand<String>(
+      oldValue: _documentStore.document.name,
+      newValue: name,
+      apply: (document, value) => document.copyWith(name: value),
+    );
+  }
+
+  ChangeDocumentCommand<PageConfig>? _pageConfigCommand(PageConfig page) {
+    if (page == _documentStore.document.page) return null;
+    return ChangeDocumentCommand<PageConfig>(
+      oldValue: _documentStore.document.page,
+      newValue: page,
+      apply: (document, value) => document.copyWith(page: value),
+    );
+  }
+
   /// Convenience wrapper: encodes the current document via
   /// [label_serialization]. Writing the result to disk is the consuming
   /// app's responsibility (see `docs/ARCHITECTURE.md` section 20).

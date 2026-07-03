@@ -1,30 +1,37 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/painting.dart';
 import 'package:label_core/label_core.dart';
 
 import '../geometry/canvas_transform.dart';
 import '../geometry/placement.dart';
+import 'image_decode_cache.dart';
 
 /// Paints one [LabelElement] directly onto [canvas] at [placement] —
 /// `label_canvas`'s own direct, editable rendering of the model, never via
 /// `label_layout_engine` or any `label_renderer_*` (see
 /// `docs/ARCHITECTURE.md` section 15).
 ///
-/// Barcode/QR/image/table content isn't decoded or laid out here (that's
+/// Barcode/QR/table content isn't decoded or laid out here (that's
 /// `label_barcode`/renderer territory) — those types draw a labeled
 /// placeholder box instead, exactly like a real design tool shows an
-/// unresolved asset.
+/// unresolved asset. Images are the one exception: a `data:` URI source is
+/// self-contained (no I/O needed to resolve it), so [imageCache] decodes
+/// and draws it for real; anything else (file path, URL, asset key) still
+/// falls back to the placeholder.
 class ElementPainter implements LabelElementVisitor<void> {
   ElementPainter({
     required this.canvas,
     required this.transform,
     required this.placement,
+    this.imageCache,
   });
 
   final Canvas canvas;
   final CanvasTransform transform;
   final ElementPlacement placement;
+  final ImageDecodeCache? imageCache;
 
   Rect get _localRectPx {
     final halfW = transform.lengthToPx(placement.size.width) / 2;
@@ -156,10 +163,41 @@ class ElementPainter implements LabelElementVisitor<void> {
 
   @override
   void visitImage(ImageElement element) {
+    final image = imageCache?.get(element.source);
     _paintLocal(
       element,
-      (rect) => _drawPlaceholder(rect, 'Imagem', element.source),
+      (rect) => image == null
+          ? _drawPlaceholder(rect, 'Imagem', element.source)
+          : _drawImage(image, element.fit, rect),
     );
+  }
+
+  void _drawImage(ui.Image image, ImageFit fit, Rect rectPx) {
+    // Preview-only simplification: crop (cropPosition/cropSize) is honored
+    // by `label_renderer_canvas`'s export/print path but not here — the
+    // canvas shows the whole source image fitted into the box.
+    final srcRect = Rect.fromLTWH(
+      0,
+      0,
+      image.width.toDouble(),
+      image.height.toDouble(),
+    );
+    final boxFit = switch (fit) {
+      ImageFit.contain => BoxFit.contain,
+      ImageFit.cover => BoxFit.cover,
+      ImageFit.fill => BoxFit.fill,
+      ImageFit.fitWidth => BoxFit.fitWidth,
+      ImageFit.fitHeight => BoxFit.fitHeight,
+      ImageFit.none => BoxFit.none,
+    };
+    final dstSize = applyBoxFit(boxFit, srcRect.size, rectPx.size).destination;
+    final dstRect =
+        Offset(
+          rectPx.center.dx - dstSize.width / 2,
+          rectPx.center.dy - dstSize.height / 2,
+        ) &
+        dstSize;
+    canvas.drawImageRect(image, srcRect, dstRect, Paint());
   }
 
   @override

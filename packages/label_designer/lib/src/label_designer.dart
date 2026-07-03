@@ -10,6 +10,7 @@ import 'logic/grouping.dart';
 import 'logic/id_generator.dart';
 import 'logic/z_order.dart';
 import 'widgets/designer_toolbar.dart';
+import 'widgets/label_properties_dialog.dart';
 import 'widgets/layers_panel.dart';
 import 'widgets/right_panel.dart';
 
@@ -102,6 +103,7 @@ class _LabelDesignerState extends State<LabelDesigner> {
     if (oldWidget.document != widget.document) {
       historyStore.loadDocument(widget.document);
       selectionStore.clear();
+      canvasStore.requestFitToView();
       setState(() {
         _activeLayerId = widget.document.layers.isEmpty
             ? null
@@ -203,6 +205,17 @@ class _LabelDesignerState extends State<LabelDesigner> {
 
   void _save() => widget.onSave?.call(documentStore.document);
 
+  void _editProperties() {
+    final document = documentStore.document;
+    LabelPropertiesDialog.show(
+      context,
+      name: document.name,
+      page: document.page,
+      onSave: (name, page) =>
+          historyStore.updateDocumentMeta(name: name, page: page),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Shortcuts(
@@ -277,6 +290,8 @@ class _LabelDesignerState extends State<LabelDesigner> {
                   onSendToBack: _sendToBack,
                   onDelete: _deleteSelection,
                   onDuplicate: _duplicateSelection,
+                  onEditProperties: _editProperties,
+                  onFitToView: canvasStore.requestFitToView,
                   onSave: widget.onSave == null ? null : _save,
                 ),
               ),

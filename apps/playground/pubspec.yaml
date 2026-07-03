@@ -19,6 +19,7 @@ dependencies:
     sdk: flutter
   label_designer_kit:
     path: ../../packages/label_designer_kit
+  file_picker: ^8.1.0
 
 dev_dependencies:
   flutter_test:

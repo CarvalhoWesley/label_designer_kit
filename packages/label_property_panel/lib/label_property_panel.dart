@@ -6,3 +6,6 @@
 library;
 
 export 'src/label_property_panel.dart';
+export 'src/widgets/labeled_number_field.dart';
+export 'src/widgets/labeled_text_field.dart';
+export 'src/widgets/property_panel_section.dart';

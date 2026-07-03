@@ -6,6 +6,7 @@ import '../geometry/canvas_transform.dart';
 import '../geometry/element_bounds.dart';
 import '../geometry/placement.dart';
 import 'element_painter.dart';
+import 'image_decode_cache.dart';
 
 /// Everything [LabelCanvasPainter] needs, as a plain snapshot — the
 /// `label_canvas` widget reads this out of the MobX stores inside an
@@ -30,6 +31,7 @@ class CanvasPaintData {
     this.guidesY = const [],
     this.marqueeStart,
     this.marqueeEnd,
+    this.imageCache,
   });
 
   final PageConfig page;
@@ -52,6 +54,8 @@ class CanvasPaintData {
 
   final Point? marqueeStart;
   final Point? marqueeEnd;
+
+  final ImageDecodeCache? imageCache;
 }
 
 /// Draws the page, grid, every element, the current selection's outline +
@@ -144,6 +148,7 @@ class LabelCanvasPainter extends CustomPainter {
           canvas: canvas,
           transform: data.transform,
           placement: entry.placement,
+          imageCache: data.imageCache,
         ),
       );
     }

@@ -5,9 +5,11 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:label_core/label_core.dart';
 import 'package:label_designer_state/label_designer_state.dart';
 import 'package:label_widgets/label_widgets.dart';
+import 'package:mobx/mobx.dart' show ReactionDisposer, reaction;
 
 import 'geometry/canvas_transform.dart';
 import 'interaction/canvas_controller.dart';
+import 'painting/image_decode_cache.dart';
 import 'painting/label_canvas_painter.dart';
 
 /// The editor's visual canvas: page, grid, elements, selection handles and
@@ -29,6 +31,7 @@ class LabelCanvas extends StatefulWidget {
     required this.canvasStore,
     this.showRulers = true,
     this.rulerThickness = 20,
+    this.fitToViewOnLoad = true,
   });
 
   final DocumentStore documentStore;
@@ -39,12 +42,21 @@ class LabelCanvas extends StatefulWidget {
   final bool showRulers;
   final double rulerThickness;
 
+  /// Whether to zoom/pan to fit the page on the first frame (see
+  /// `ViewportStore.fitToPage`). Widget tests that assert on hit-testing
+  /// at a specific zoom/pan set this to `false` to keep geometry
+  /// deterministic.
+  final bool fitToViewOnLoad;
+
   @override
   State<LabelCanvas> createState() => _LabelCanvasState();
 }
 
 class _LabelCanvasState extends State<LabelCanvas> {
   late final CanvasController _controller;
+  late final ImageDecodeCache _imageCache;
+  late final ReactionDisposer _fitToViewDisposer;
+  Size? _viewportSize;
 
   @override
   void initState() {
@@ -55,6 +67,41 @@ class _LabelCanvasState extends State<LabelCanvas> {
       historyStore: widget.historyStore,
       viewportStore: widget.viewportStore,
       canvasStore: widget.canvasStore,
+    );
+    _imageCache = ImageDecodeCache(
+      onImageReady: () {
+        if (mounted) setState(() {});
+      },
+    );
+    // Fits once on the first frame (there's no prior user zoom/pan to
+    // preserve yet) and again whenever the toolbar's "fit to view" button
+    // or a document swap bumps `fitToViewRequest` — see
+    // `CanvasStore.requestFitToView`'s doc comment.
+    _fitToViewDisposer = reaction<int>(
+      (_) => widget.canvasStore.fitToViewRequest,
+      (_) => _fitToView(),
+    );
+    if (widget.fitToViewOnLoad) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _fitToView());
+    }
+  }
+
+  @override
+  void dispose() {
+    _fitToViewDisposer();
+    _imageCache.dispose();
+    super.dispose();
+  }
+
+  void _fitToView() {
+    final size = _viewportSize;
+    if (size == null || !mounted) return;
+    final page = widget.documentStore.document.page;
+    widget.viewportStore.fitToPage(
+      pageWidthMm: page.width,
+      pageHeightMm: page.height,
+      viewportWidthPx: size.width,
+      viewportHeightPx: size.height,
     );
   }
 
@@ -111,6 +158,7 @@ class _LabelCanvasState extends State<LabelCanvas> {
           guidesY: List.of(widget.canvasStore.activeGuidesY),
           marqueeStart: widget.canvasStore.marqueeStart,
           marqueeEnd: widget.canvasStore.marqueeEnd,
+          imageCache: _imageCache,
         );
 
         return Listener(
@@ -124,8 +172,12 @@ class _LabelCanvasState extends State<LabelCanvas> {
           onPointerUp: (event) => _controller.pointerUp(event.localPosition),
           onPointerCancel: (_) => _controller.pointerCancel(),
           onPointerSignal: _handlePointerSignal,
-          child: SizedBox.expand(
-            child: CustomPaint(painter: LabelCanvasPainter(data)),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final size = Size(constraints.maxWidth, constraints.maxHeight);
+              _viewportSize = size;
+              return CustomPaint(size: size, painter: LabelCanvasPainter(data));
+            },
           ),
         );
       },

@@ -11,20 +11,25 @@ variáveis declaradas com valores de amostra, então grade/preview/painel
 de propriedades mostram algo útil imediatamente.
 
 "Salvar" exercita o pipeline completo que um projeto consumidor rodaria
-na hora de exportar/imprimir (ver `docs/ARCHITECTURE.md`, seção 20):
+na hora de salvar/exportar/imprimir (ver `docs/ARCHITECTURE.md`, seção 20):
 
-1. codifica o `LabelDocument` via `label_serialization` (JSON no console);
-2. resolve via `LabelLayoutEngine`, usando os valores de amostra já
+1. codifica o `LabelDocument` via `label_serialization`;
+2. abre um diálogo nativo de "Salvar como" (`file_picker`), sugerindo o
+   nome da própria etiqueta como nome de arquivo, e grava o `.label` em
+   disco;
+3. resolve via `LabelLayoutEngine`, usando os valores de amostra já
    declarados nas variáveis do documento;
-3. renderiza o documento resolvido em **dois** backends reais —
+4. renderiza o documento resolvido em **dois** backends reais —
    `label_renderer_pdf` (PDF vetorial) e `label_renderer_argox` (comandos
-   PPLA) — e mostra o tamanho de cada saída num snackbar.
+   PPLA) — e mostra o resultado (caminho salvo + tamanho de cada saída)
+   num snackbar.
 
-Não grava em disco nem envia nada a uma impressora de verdade — isso é
-responsabilidade do projeto consumidor, não deste framework.
+Não envia nada a uma impressora de verdade — isso é responsabilidade do
+projeto consumidor, não deste framework.
 
-Rodar:
+Rodar (o app só tem suporte à plataforma Windows desktop configurado —
+`dart:io`/diálogo nativo de arquivo não funcionam em `flutter run -d chrome`):
 
 ```
-melos exec --scope=playground -- flutter run -d chrome
+melos exec --scope=playground -- flutter run -d windows
 ```

@@ -245,10 +245,40 @@ mixin _$CanvasStore on CanvasStoreBase, Store {
     });
   }
 
+  late final _$fitToViewRequestAtom = Atom(
+    name: 'CanvasStoreBase.fitToViewRequest',
+    context: context,
+  );
+
+  @override
+  int get fitToViewRequest {
+    _$fitToViewRequestAtom.reportRead();
+    return super.fitToViewRequest;
+  }
+
+  @override
+  set fitToViewRequest(int value) {
+    _$fitToViewRequestAtom.reportWrite(value, super.fitToViewRequest, () {
+      super.fitToViewRequest = value;
+    });
+  }
+
   late final _$CanvasStoreBaseActionController = ActionController(
     name: 'CanvasStoreBase',
     context: context,
   );
+
+  @override
+  void requestFitToView() {
+    final _$actionInfo = _$CanvasStoreBaseActionController.startAction(
+      name: 'CanvasStoreBase.requestFitToView',
+    );
+    try {
+      return super.requestFitToView();
+    } finally {
+      _$CanvasStoreBaseActionController.endAction(_$actionInfo);
+    }
+  }
 
   @override
   void beginDrag({ResizeHandle? handle}) {
@@ -467,6 +497,7 @@ rotatingElementId: ${rotatingElementId},
 rotationPreviewDegrees: ${rotationPreviewDegrees},
 marqueeStart: ${marqueeStart},
 marqueeEnd: ${marqueeEnd},
+fitToViewRequest: ${fitToViewRequest},
 hasActiveGuides: ${hasActiveGuides}
     ''';
   }

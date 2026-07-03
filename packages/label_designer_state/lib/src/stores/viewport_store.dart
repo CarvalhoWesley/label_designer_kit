@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:label_core/label_core.dart';
 import 'package:mobx/mobx.dart';
 
@@ -25,7 +27,7 @@ abstract class ViewportStoreBase with Store {
   bool showGrid = true;
 
   @observable
-  double gridSizeMm = 5;
+  double gridSizeMm = 1;
 
   @observable
   bool snapEnabled = true;
@@ -49,6 +51,34 @@ abstract class ViewportStoreBase with Store {
   void resetView() {
     zoom = 1;
     pan = const Point.zero();
+  }
+
+  /// Zooms and pans so the page (given its size in mm) is centered and
+  /// fills [viewportWidthPx]/[viewportHeightPx] with a 10% margin — called
+  /// when the canvas first lays out and whenever a different document is
+  /// loaded, so a small label doesn't appear tiny in a corner of a large
+  /// viewport at the default `zoom = 1` (1mm = 1px).
+  @action
+  void fitToPage({
+    required double pageWidthMm,
+    required double pageHeightMm,
+    required double viewportWidthPx,
+    required double viewportHeightPx,
+  }) {
+    if (pageWidthMm <= 0 ||
+        pageHeightMm <= 0 ||
+        viewportWidthPx <= 0 ||
+        viewportHeightPx <= 0) {
+      return;
+    }
+    final fitZoom =
+        0.9 *
+        math.min(viewportWidthPx / pageWidthMm, viewportHeightPx / pageHeightMm);
+    zoom = fitZoom.clamp(minZoom, maxZoom);
+    pan = Point(
+      x: (viewportWidthPx - pageWidthMm * zoom) / 2,
+      y: (viewportHeightPx - pageHeightMm * zoom) / 2,
+    );
   }
 
   @action

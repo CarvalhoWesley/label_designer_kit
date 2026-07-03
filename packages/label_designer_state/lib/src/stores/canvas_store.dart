@@ -72,6 +72,17 @@ abstract class CanvasStoreBase with Store {
   @observable
   Point? marqueeEnd;
 
+  /// Bumped by [requestFitToView] to ask `label_canvas` to recompute
+  /// zoom/pan so the page fills the viewport — `label_canvas` reacts to
+  /// this value changing rather than exposing a method, so callers outside
+  /// the widget tree (the toolbar's "fit to view" button, or a document
+  /// swap) don't need a reference to canvas internals.
+  @observable
+  int fitToViewRequest = 0;
+
+  @action
+  void requestFitToView() => fitToViewRequest++;
+
   @computed
   bool get hasActiveGuides =>
       activeGuidesX.isNotEmpty || activeGuidesY.isNotEmpty;
