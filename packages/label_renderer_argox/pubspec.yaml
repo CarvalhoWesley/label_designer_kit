@@ -1,0 +1,29 @@
+name: label_renderer_argox
+description: >
+  Renderer que converte um ResolvedDocument em comandos PPLA (e futuramente
+  PPLB) para impressoras Argox — dois dialetos, um pacote, via
+  ArgoxRendererOptions.dialect. Ver docs/ARCHITECTURE.md, seção 11, e
+  docs/ROADMAP.md, etapa 16.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  label_barcode:
+    path: ../label_barcode
+  label_core:
+    path: ../label_core
+  label_renderer:
+    path: ../label_renderer
+
+dev_dependencies:
+  # Dev-only: exercises the full LabelDocument -> ResolvedDocument -> PPLA
+  # pipeline in test/end_to_end_test.dart. Production code in lib/ never
+  # imports label_layout_engine — a renderer only ever consumes an
+  # already-resolved ResolvedDocument.
+  label_layout_engine:
+    path: ../label_layout_engine
+  lints: ^5.0.0
+  test: ^1.24.0
