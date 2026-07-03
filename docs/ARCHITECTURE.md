@@ -107,12 +107,15 @@ label_designer_workspace/            # monorepo (melos)
 │   ├── label_canvas/                # editor visual (CustomPainter)
 │   ├── label_property_panel/        # painel de propriedades
 │   ├── label_preview/               # widget de preview (usa layout+canvas renderer)
-│   └── label_designer/              # composição do editor completo
+│   ├── label_designer/              # composição do editor completo
+│   └── label_designer_kit/          # guarda-chuva: reexporta a API pública numa única dependência
 └── apps/
     └── playground/                  # sandbox interno, apenas para testar engines/renderers durante o desenvolvimento — não é entregável
 ```
 
 > Não há `designer_desktop`/`designer_web` neste workspace. O projeto Flutter existente do usuário é o "app" que consome os pacotes acima via `pubspec.yaml`.
+
+> **Adição pós-etapa 17**: `label_designer_kit` não estava na lista original de packages — foi adicionado depois que o guia de integração (etapa 17) deixou claro que exigir 6-8 dependências `path:`/`git:` separadas do projeto consumidor era um atrito real. Ele só reexporta símbolos de pacotes já existentes (não contém lógica própria além do barrel file) e não muda nenhuma regra de dependência interna deste diagrama — ver seção 20 e `docs/INTEGRATION.md`.
 
 ## 5. Diagrama de packages
 
@@ -691,10 +694,18 @@ sequenceDiagram
 
 ## 20. Integração no projeto existente do usuário
 
-Não há app entregável neste workspace — a integração acontece inteiramente via `pubspec.yaml` do projeto consumidor. Forma prevista (path dependency durante o desenvolvimento; git ou pub.dev depois de publicado):
+Não há app entregável neste workspace — a integração acontece inteiramente via `pubspec.yaml` do projeto consumidor. Forma recomendada: uma única dependência em `label_designer_kit`, que reexporta tudo que o consumidor típico precisa (path dependency durante o desenvolvimento; git ou pub.dev depois de publicado):
 
 ```yaml
 # pubspec.yaml do projeto do usuário
+dependencies:
+  label_designer_kit:
+    path: ../label_designer_workspace/packages/label_designer_kit
+```
+
+Quem quiser controle fino (por exemplo, um serviço headless que só precisa de um renderer, sem o editor visual) pode continuar declarando os pacotes individuais em vez do guarda-chuva:
+
+```yaml
 dependencies:
   label_designer:
     path: ../label_designer_workspace/packages/label_designer
@@ -702,6 +713,8 @@ dependencies:
     path: ../label_designer_workspace/packages/label_renderer_argox
   # + label_renderer_zebra, label_renderer_tsc, label_renderer_pdf conforme a impressora usada
 ```
+
+Ver o passo a passo completo em [`docs/INTEGRATION.md`](./INTEGRATION.md).
 
 Uso conceitual dentro de uma tela do projeto do usuário (ilustrativo — a API real será definida nas etapas 10-13 do roadmap):
 
