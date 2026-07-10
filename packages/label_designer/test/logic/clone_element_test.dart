@@ -55,11 +55,14 @@ void main() {
     expect(clone.children.single.position, _rect.position);
   });
 
-  test('cloning the same element twice with a real generator never collides', () {
-    var counter = 0;
-    String next() => 'id-${counter++}';
-    final a = cloneElement(_rect, next);
-    final b = cloneElement(_rect, next);
-    expect(a.id, isNot(b.id));
-  });
+  test(
+    'cloning the same element twice with a real generator never collides',
+    () {
+      var counter = 0;
+      String next() => 'id-${counter++}';
+      final a = cloneElement(_rect, next);
+      final b = cloneElement(_rect, next);
+      expect(a.id, isNot(b.id));
+    },
+  );
 }

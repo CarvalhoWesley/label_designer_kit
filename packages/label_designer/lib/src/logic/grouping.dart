@@ -6,7 +6,10 @@ import 'package:label_core/label_core.dart';
 /// wasn't part of the selection, ready to be combined into a full element
 /// list (e.g. `[...remainingSiblings, group]`) and dispatched via
 /// `HistoryStore.replaceElements`.
-typedef GroupResult = ({GroupElement group, List<LabelElement> remainingSiblings});
+typedef GroupResult = ({
+  GroupElement group,
+  List<LabelElement> remainingSiblings,
+});
 
 /// Groups every element in [allElements] whose id is in [selectedIds] into
 /// one new `GroupElement` (GoF Composite — see `docs/ARCHITECTURE.md`

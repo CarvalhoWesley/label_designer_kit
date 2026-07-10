@@ -242,8 +242,7 @@ class _LabelDesignerState extends State<LabelDesigner> {
         ): const _UngroupIntent(),
         LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyA):
             const _SelectAllIntent(),
-        LogicalKeySet(LogicalKeyboardKey.escape):
-            const _ClearSelectionIntent(),
+        LogicalKeySet(LogicalKeyboardKey.escape): const _ClearSelectionIntent(),
       },
       child: Actions(
         actions: <Type, Action<Intent>>{

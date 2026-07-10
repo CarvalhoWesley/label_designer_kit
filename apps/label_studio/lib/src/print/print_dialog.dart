@@ -16,10 +16,13 @@ enum _PrintFormat { pdf, ppla }
 /// the printer gets exactly the bytes `label_renderer_argox` produced).
 ///
 /// When [LabelDocument.page]'s `columns` is more than 1 (a multi-column
-/// roll — see `docs/ARCHITECTURE.md`, "colunas de rolo"), this dialog also
-/// offers a batch mode: one data record per physical label, tiled across
-/// columns via `LabelLayoutEngine.resolveBatch` and sent to the printer one
-/// physical row at a time.
+/// roll — see `docs/ARCHITECTURE.md`, "colunas de rolo"), "Cópias" stops
+/// meaning "ask the printer to repeat the same image in place" and instead
+/// becomes the total label count, tiled across columns via
+/// `LabelLayoutEngine.resolveBatch` and sent to the printer one physical
+/// row at a time — see [_print]. "Um valor diferente por etiqueta" mode
+/// additionally lets each of those labels carry its own data instead of
+/// all being identical.
 class PrintDialog extends StatefulWidget {
   const PrintDialog({super.key, required this.document});
 
@@ -44,9 +47,8 @@ class _PrintDialogState extends State<PrintDialog> {
   ArgoxTransferType _transferType = ArgoxTransferType.directThermal;
 
   /// Whether the roll this document was designed for has more than one
-  /// column — when it does, the dialog offers batch printing tiled across
-  /// columns via `LabelLayoutEngine.resolveBatch` instead of just the
-  /// single-label path.
+  /// column — when it does, `_print` always tiles across columns via
+  /// `LabelLayoutEngine.resolveBatch` instead of resolving a single label.
   bool get _hasColumns => widget.document.page.columns > 1;
 
   bool _batchMode = false;
@@ -82,38 +84,32 @@ class _PrintDialogState extends State<PrintDialog> {
     setState(() => _isPrinting = true);
     try {
       const layoutEngine = LabelLayoutEngine();
-      final resolvedRows = _batchMode && _hasColumns
-          ? layoutEngine.resolveBatch(widget.document, _records)
-          : [layoutEngine.resolve(widget.document, _sampleData)];
 
-      for (final resolved in resolvedRows) {
-        switch (_format) {
-          case _PrintFormat.pdf:
-            const renderer = PdfRenderer();
-            final bytes = await renderer.render(
-              resolved,
-              const PdfRendererOptions(),
-            );
-            await WindowsPdfPrintTransport(
-              copies: _copies,
-            ).send(bytes, target: _selectedPrinter);
-          case _PrintFormat.ppla:
-            const renderer = ArgoxRenderer();
-            final bytes = await renderer.render(
-              resolved,
-              ArgoxRendererOptions(
-                darkness: _darkness,
-                copies: _copies,
-                transferType: _transferType,
-                dialect: ArgoxDialect.ppla,
-              ),
-            );
-            await const WindowsRawPrintTransport().send(
-              bytes,
-              target: _selectedPrinter,
-            );
+      if (_hasColumns) {
+        // "Cópias" *is* the label count here: each entry in `records`
+        // becomes one physical label, tiled across `page.columns` by
+        // resolveBatch — 1 -> column 1; 2 -> columns 1+2; 3 -> columns
+        // 1+2, then column 1 of the next row; and so on. `_batchMode` only
+        // changes *what* fills each of those labels (every one identical
+        // to `_sampleData`, or a distinct record per label); it never
+        // multiplies the row count on top of that.
+        final records = _batchMode
+            ? _records
+            : List.generate(_copies, (_) => _sampleData);
+        final rows = layoutEngine.resolveBatch(widget.document, records);
+        // copies: 1 — the row count above already *is* the requested
+        // quantity, so the printer must not additionally repeat each row.
+        for (final resolved in rows) {
+          await _renderAndSend(resolved, copies: 1);
         }
+      } else {
+        // Single-column roll: one resolve(), and the printer/driver's own
+        // repeat mechanism (PPLA's `Q`, the PDF driver's `copies`) prints
+        // it _copies times — cheaper than rendering N identical documents.
+        final resolved = layoutEngine.resolve(widget.document, _sampleData);
+        await _renderAndSend(resolved, copies: _copies);
       }
+
       if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -126,6 +122,38 @@ class _PrintDialogState extends State<PrintDialog> {
       ).showSnackBar(SnackBar(content: Text('Falha ao imprimir: $e')));
     } finally {
       if (mounted) setState(() => _isPrinting = false);
+    }
+  }
+
+  Future<void> _renderAndSend(
+    ResolvedDocument resolved, {
+    required int copies,
+  }) async {
+    switch (_format) {
+      case _PrintFormat.pdf:
+        const renderer = PdfRenderer();
+        final bytes = await renderer.render(
+          resolved,
+          const PdfRendererOptions(),
+        );
+        await WindowsPdfPrintTransport(
+          copies: copies,
+        ).send(bytes, target: _selectedPrinter);
+      case _PrintFormat.ppla:
+        const renderer = ArgoxRenderer();
+        final bytes = await renderer.render(
+          resolved,
+          ArgoxRendererOptions(
+            darkness: _darkness,
+            copies: copies,
+            transferType: _transferType,
+            dialect: ArgoxDialect.ppla,
+          ),
+        );
+        await const WindowsRawPrintTransport().send(
+          bytes,
+          target: _selectedPrinter,
+        );
     }
   }
 
@@ -203,15 +231,16 @@ class _PrintDialogState extends State<PrintDialog> {
                     ),
                     const SizedBox(height: 12),
                     ..._optionsFor(_format),
-                    if (_hasColumns) ...[
+                    if (_hasColumns &&
+                        widget.document.variables.isNotEmpty) ...[
                       const Divider(height: 24),
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('Impressão em lote'),
-                        subtitle: Text(
-                          'Rolo com ${widget.document.page.columns} colunas — '
-                          'distribui vários registros pelas colunas '
-                          'automaticamente.',
+                        title: const Text('Um valor diferente por etiqueta'),
+                        subtitle: const Text(
+                          'Em vez de repetir os mesmos dados em todas as '
+                          'etiquetas do lote, informe um registro por '
+                          'etiqueta (a quantidade vira o total de registros).',
                         ),
                         value: _batchMode,
                         onChanged: (value) =>
@@ -270,27 +299,13 @@ class _PrintDialogState extends State<PrintDialog> {
   }
 
   List<Widget> _optionsFor(_PrintFormat format) {
+    // In "um valor diferente por etiqueta" mode, the label count is however
+    // many records were entered below, not this slider — showing both
+    // would be two conflicting quantity controls on screen at once.
+    final showCopies = !(_hasColumns && _batchMode);
     switch (format) {
       case _PrintFormat.pdf:
-        return [
-          Row(
-            children: [
-              const Text('Cópias'),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Slider(
-                  value: _copies.toDouble(),
-                  min: 1,
-                  max: 50,
-                  divisions: 49,
-                  label: '$_copies',
-                  onChanged: (value) => setState(() => _copies = value.round()),
-                ),
-              ),
-              SizedBox(width: 32, child: Text('$_copies')),
-            ],
-          ),
-        ];
+        return [if (showCopies) _copiesField()];
       case _PrintFormat.ppla:
         return [
           Text('Escurecimento (H${_darkness.toString().padLeft(2, '0')})'),
@@ -302,23 +317,7 @@ class _PrintDialogState extends State<PrintDialog> {
             label: '$_darkness',
             onChanged: (value) => setState(() => _darkness = value.round()),
           ),
-          Row(
-            children: [
-              const Text('Cópias'),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Slider(
-                  value: _copies.toDouble(),
-                  min: 1,
-                  max: 50,
-                  divisions: 49,
-                  label: '$_copies',
-                  onChanged: (value) => setState(() => _copies = value.round()),
-                ),
-              ),
-              SizedBox(width: 32, child: Text('$_copies')),
-            ],
-          ),
+          if (showCopies) _copiesField(),
           DropdownButtonFormField<ArgoxTransferType>(
             value: _transferType,
             decoration: const InputDecoration(labelText: 'Tipo de impressão'),
@@ -339,33 +338,48 @@ class _PrintDialogState extends State<PrintDialog> {
     }
   }
 
-  /// Data-entry UI for batch printing: one row per record when the
-  /// document declares variables (reusing [SampleDataForm] per row), or
-  /// just a count when it doesn't (e.g. printing N identical labels tiled
-  /// across the roll's columns).
-  Widget _buildBatchRecords(BuildContext context) {
-    if (widget.document.variables.isEmpty) {
-      return Row(
-        children: [
-          const Text('Quantidade de etiquetas'),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Slider(
-              value: _records.length.toDouble(),
-              min: 1,
-              max: 50,
-              divisions: 49,
-              label: '${_records.length}',
-              onChanged: (value) => setState(
-                () => _records = List.generate(value.round(), (_) => const {}),
+  /// The "Cópias"/"Quantidade de etiquetas" slider. On a single-column
+  /// roll it's a literal copy count handed to the printer/driver. On a
+  /// multi-column roll (outside "um valor diferente por etiqueta" mode)
+  /// it *is* the total number of labels to print, tiled across
+  /// `page.columns` by [_print] — hence the different label/hint text.
+  Widget _copiesField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(_hasColumns ? 'Quantidade de etiquetas' : 'Cópias'),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Slider(
+                value: _copies.toDouble(),
+                min: 1,
+                max: 50,
+                divisions: 49,
+                label: '$_copies',
+                onChanged: (value) => setState(() => _copies = value.round()),
               ),
             ),
+            SizedBox(width: 32, child: Text('$_copies')),
+          ],
+        ),
+        if (_hasColumns)
+          Text(
+            'Distribuídas automaticamente pelas ${widget.document.page.columns} '
+            'colunas do rolo.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: Theme.of(context).hintColor),
           ),
-          SizedBox(width: 32, child: Text('${_records.length}')),
-        ],
-      );
-    }
+      ],
+    );
+  }
 
+  /// One [SampleDataForm] row per record, for "um valor diferente por
+  /// etiqueta" mode — only shown when the document declares variables
+  /// (see the `SwitchListTile` gating `_batchMode` above).
+  Widget _buildBatchRecords(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,

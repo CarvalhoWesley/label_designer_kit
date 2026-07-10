@@ -61,10 +61,8 @@ class LayersPanel extends StatelessWidget {
                     tooltip: layer.locked
                         ? 'Desbloquear camada'
                         : 'Bloquear camada',
-                    onPressed: () => layerStore.setLocked(
-                      layer.id,
-                      locked: !layer.locked,
-                    ),
+                    onPressed: () =>
+                        layerStore.setLocked(layer.id, locked: !layer.locked),
                   ),
                   LabelToolbarButton(
                     icon: Icons.arrow_upward,

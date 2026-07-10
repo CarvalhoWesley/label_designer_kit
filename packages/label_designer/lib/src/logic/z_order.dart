@@ -34,25 +34,24 @@ List<LabelElement> _reorder(
   for (final element in elements) {
     (selectedIds.contains(element.id) ? selected : rest).add(element);
   }
-  final ordered = selectedLast ? [...rest, ...selected] : [...selected, ...rest];
-  return [
-    for (var i = 0; i < ordered.length; i++) _withZIndex(ordered[i], i),
-  ];
+  final ordered = selectedLast
+      ? [...rest, ...selected]
+      : [...selected, ...rest];
+  return [for (var i = 0; i < ordered.length; i++) _withZIndex(ordered[i], i)];
 }
 
-LabelElement _withZIndex(LabelElement element, int zIndex) =>
-    switch (element) {
-      TextElement e => e.copyWith(zIndex: zIndex),
-      BarcodeElement e => e.copyWith(zIndex: zIndex),
-      QRCodeElement e => e.copyWith(zIndex: zIndex),
-      ImageElement e => e.copyWith(zIndex: zIndex),
-      RectangleElement e => e.copyWith(zIndex: zIndex),
-      EllipseElement e => e.copyWith(zIndex: zIndex),
-      CircleElement e => e.copyWith(zIndex: zIndex),
-      LineElement e => e.copyWith(zIndex: zIndex),
-      VariableElement e => e.copyWith(zIndex: zIndex),
-      DateElement e => e.copyWith(zIndex: zIndex),
-      TimeElement e => e.copyWith(zIndex: zIndex),
-      TableElement e => e.copyWith(zIndex: zIndex),
-      GroupElement e => e.copyWith(zIndex: zIndex),
-    };
+LabelElement _withZIndex(LabelElement element, int zIndex) => switch (element) {
+  TextElement e => e.copyWith(zIndex: zIndex),
+  BarcodeElement e => e.copyWith(zIndex: zIndex),
+  QRCodeElement e => e.copyWith(zIndex: zIndex),
+  ImageElement e => e.copyWith(zIndex: zIndex),
+  RectangleElement e => e.copyWith(zIndex: zIndex),
+  EllipseElement e => e.copyWith(zIndex: zIndex),
+  CircleElement e => e.copyWith(zIndex: zIndex),
+  LineElement e => e.copyWith(zIndex: zIndex),
+  VariableElement e => e.copyWith(zIndex: zIndex),
+  DateElement e => e.copyWith(zIndex: zIndex),
+  TimeElement e => e.copyWith(zIndex: zIndex),
+  TableElement e => e.copyWith(zIndex: zIndex),
+  GroupElement e => e.copyWith(zIndex: zIndex),
+};

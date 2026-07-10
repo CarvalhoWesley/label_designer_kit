@@ -20,7 +20,11 @@ void main() {
   group('groupElements', () {
     test('throws when fewer than 2 selected ids match', () {
       final elements = [
-        _rect('a', position: const Point(x: 0, y: 0), size: const Size2D(width: 10, height: 10)),
+        _rect(
+          'a',
+          position: const Point(x: 0, y: 0),
+          size: const Size2D(width: 10, height: 10),
+        ),
       ];
       expect(
         () => groupElements(
@@ -79,9 +83,21 @@ void main() {
     });
 
     test('remainingSiblings excludes exactly the grouped elements', () {
-      final a = _rect('a', position: Point.zero(), size: const Size2D(width: 10, height: 10));
-      final b = _rect('b', position: Point.zero(), size: const Size2D(width: 10, height: 10));
-      final c = _rect('c', position: Point.zero(), size: const Size2D(width: 10, height: 10));
+      final a = _rect(
+        'a',
+        position: Point.zero(),
+        size: const Size2D(width: 10, height: 10),
+      );
+      final b = _rect(
+        'b',
+        position: Point.zero(),
+        size: const Size2D(width: 10, height: 10),
+      );
+      final c = _rect(
+        'c',
+        position: Point.zero(),
+        size: const Size2D(width: 10, height: 10),
+      );
 
       final result = groupElements(
         allElements: [a, b, c],
@@ -93,8 +109,18 @@ void main() {
     });
 
     test('group inherits the highest zIndex among its members', () {
-      final a = _rect('a', position: Point.zero(), size: const Size2D(width: 10, height: 10), zIndex: 3);
-      final b = _rect('b', position: Point.zero(), size: const Size2D(width: 10, height: 10), zIndex: 7);
+      final a = _rect(
+        'a',
+        position: Point.zero(),
+        size: const Size2D(width: 10, height: 10),
+        zIndex: 3,
+      );
+      final b = _rect(
+        'b',
+        position: Point.zero(),
+        size: const Size2D(width: 10, height: 10),
+        zIndex: 7,
+      );
 
       final result = groupElements(
         allElements: [a, b],

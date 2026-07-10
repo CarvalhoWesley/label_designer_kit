@@ -20,9 +20,7 @@ LabelDocument _document({List<LabelElement> elements = const []}) =>
     LabelDocument.blank(name: 'Doc').copyWith(elements: elements);
 
 Widget _wrap(Widget child) => MaterialApp(
-  home: Scaffold(
-    body: SizedBox(width: 1200, height: 800, child: child),
-  ),
+  home: Scaffold(body: SizedBox(width: 1200, height: 800, child: child)),
 );
 
 Future<void> _pressCtrl(WidgetTester tester, LogicalKeyboardKey key) async {
@@ -32,7 +30,10 @@ Future<void> _pressCtrl(WidgetTester tester, LogicalKeyboardKey key) async {
   await tester.pump();
 }
 
-Future<void> _pressCtrlShift(WidgetTester tester, LogicalKeyboardKey key) async {
+Future<void> _pressCtrlShift(
+  WidgetTester tester,
+  LogicalKeyboardKey key,
+) async {
   await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
   await tester.sendKeyDownEvent(LogicalKeyboardKey.shift);
   await tester.sendKeyEvent(key);
@@ -42,9 +43,7 @@ Future<void> _pressCtrlShift(WidgetTester tester, LogicalKeyboardKey key) async 
 }
 
 void main() {
-  testWidgets('renders without throwing for a blank document', (
-    tester,
-  ) async {
+  testWidgets('renders without throwing for a blank document', (tester) async {
     await tester.pumpWidget(_wrap(LabelDesigner(document: _document())));
     await tester.pump();
     expect(tester.takeException(), isNull);
@@ -139,39 +138,34 @@ void main() {
     expect(find.text('Geometria'), findsOneWidget);
   });
 
-  testWidgets(
-    'ctrl+A selects everything, escape clears the selection',
-    (tester) async {
-      await tester.pumpWidget(
-        _wrap(
-          LabelDesigner(
-            document: _document(elements: [_rect('a'), _rect('b')]),
-          ),
-        ),
-      );
-      await tester.pump();
+  testWidgets('ctrl+A selects everything, escape clears the selection', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(
+        LabelDesigner(document: _document(elements: [_rect('a'), _rect('b')])),
+      ),
+    );
+    await tester.pump();
 
-      await _pressCtrl(tester, LogicalKeyboardKey.keyA);
-      // Multi-selection panel shows the count.
-      expect(find.text('2 elementos selecionados'), findsOneWidget);
+    await _pressCtrl(tester, LogicalKeyboardKey.keyA);
+    // Multi-selection panel shows the count.
+    expect(find.text('2 elementos selecionados'), findsOneWidget);
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-      await tester.pump();
-      expect(
-        find.text('Selecione um elemento para editar suas propriedades.'),
-        findsOneWidget,
-      );
-    },
-  );
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump();
+    expect(
+      find.text('Selecione um elemento para editar suas propriedades.'),
+      findsOneWidget,
+    );
+  });
 
   testWidgets('ctrl+G groups a multi-selection into one GroupElement', (
     tester,
   ) async {
     await tester.pumpWidget(
       _wrap(
-        LabelDesigner(
-          document: _document(elements: [_rect('a'), _rect('b')]),
-        ),
+        LabelDesigner(document: _document(elements: [_rect('a'), _rect('b')])),
       ),
     );
     await tester.pump();
@@ -192,9 +186,7 @@ void main() {
   ) async {
     LabelDocument? saved;
     await tester.pumpWidget(
-      _wrap(
-        LabelDesigner(document: _document(), onSave: (doc) => saved = doc),
-      ),
+      _wrap(LabelDesigner(document: _document(), onSave: (doc) => saved = doc)),
     );
 
     await tester.tap(find.byTooltip('Salvar'));
@@ -241,27 +233,28 @@ void main() {
     expect(find.byTooltip('Desbloquear camada'), findsOneWidget);
   });
 
-  testWidgets('bring-to-front/send-to-back toolbar buttons work without throwing', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      _wrap(
-        LabelDesigner(
-          document: _document(elements: [_rect('a'), _rect('b')]),
+  testWidgets(
+    'bring-to-front/send-to-back toolbar buttons work without throwing',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          LabelDesigner(
+            document: _document(elements: [_rect('a'), _rect('b')]),
+          ),
         ),
-      ),
-    );
-    await tester.pump();
+      );
+      await tester.pump();
 
-    await _pressCtrl(tester, LogicalKeyboardKey.keyA);
-    await tester.tap(find.byTooltip('Trazer para frente'));
-    await tester.pump();
-    expect(tester.takeException(), isNull);
+      await _pressCtrl(tester, LogicalKeyboardKey.keyA);
+      await tester.tap(find.byTooltip('Trazer para frente'));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
 
-    await tester.tap(find.byTooltip('Enviar para trás'));
-    await tester.pump();
-    expect(tester.takeException(), isNull);
-  });
+      await tester.tap(find.byTooltip('Enviar para trás'));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   for (final key in [LogicalKeyboardKey.delete, LogicalKeyboardKey.backspace]) {
     testWidgets('$key removes the selection', (tester) async {

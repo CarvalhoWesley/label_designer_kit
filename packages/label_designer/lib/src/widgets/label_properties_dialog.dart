@@ -141,6 +141,47 @@ class _LabelPropertiesDialogState extends State<LabelPropertiesDialog> {
                 ],
               ),
               PropertyPanelSection(
+                title: 'Colunas do rolo',
+                children: [
+                  Text(
+                    'Quantas etiquetas o rolo tem lado a lado — usado ao '
+                    'imprimir vários registros de uma vez, distribuindo-os '
+                    'automaticamente pelas colunas.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).hintColor,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: LabeledNumberField(
+                          label: 'Colunas',
+                          value: _page.columns.toDouble(),
+                          min: 1,
+                          onChanged: (value) => setState(
+                            () =>
+                                _page = _page.copyWith(columns: value.round()),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: LabeledNumberField(
+                          label: 'Espaço entre colunas',
+                          value: _page.columnGap,
+                          min: 0,
+                          suffixText: 'mm',
+                          onChanged: (value) => setState(
+                            () => _page = _page.copyWith(columnGap: value),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              PropertyPanelSection(
                 title: 'Margens',
                 children: [
                   Row(
