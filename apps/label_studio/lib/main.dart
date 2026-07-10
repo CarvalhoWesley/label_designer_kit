@@ -24,10 +24,14 @@ class LabelStudioApp extends StatelessWidget {
             final error = snapshot.error;
             if (error != null) {
               return Scaffold(
-                body: Center(child: Text('Falha ao abrir a biblioteca: $error')),
+                body: Center(
+                  child: Text('Falha ao abrir a biblioteca: $error'),
+                ),
               );
             }
-            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
           }
           return LibraryScreen(repository: snapshot.data!);
         },

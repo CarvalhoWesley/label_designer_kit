@@ -61,6 +61,18 @@ A lista de packages fornecida é o ponto de partida. Como arquiteto, proponho os
 
 Nenhum outro pacote da lista original foi removido ou renomeado.
 
+> **Adição pós-etapa 18**: `label_print_transport` estava previsto no ROADMAP como um
+> único pacote futuro ("consumido apenas por projetos externos, nunca pelo domínio"). Na
+> etapa 20, ao implementá-lo, ele foi dividido em dois: `label_print_transport` (só a
+> interface `PrintTransport`/`PrinterDiscovery`, zero dependências) e
+> `label_print_transport_windows` (o backend que embrulha o pacote de terceiros
+> `windows_printer`, primeiro canal validado — USB via spooler do Windows). O motivo é o
+> mesmo já aplicado a `label_renderer`/`label_renderer_argox`: um pacote batizado de forma
+> genérica não deveria nascer acoplado a uma implementação específica de plataforma.
+> Backends futuros (rede/TCP na porta 9100, serial) viram novos pacotes irmãos de
+> `label_print_transport_windows`, sem tocar na interface. Ver seção 4 e
+> `docs/ROADMAP.md`, etapa 20.
+
 ## 3. Mapeamento em Clean Architecture
 
 ```
@@ -108,7 +120,9 @@ label_designer_workspace/            # monorepo (melos)
 │   ├── label_property_panel/        # painel de propriedades
 │   ├── label_preview/               # widget de preview (usa layout+canvas renderer)
 │   ├── label_designer/              # composição do editor completo
-│   └── label_designer_kit/          # guarda-chuva: reexporta a API pública numa única dependência
+│   ├── label_designer_kit/          # guarda-chuva: reexporta a API pública numa única dependência
+│   ├── label_print_transport/       # interface PrintTransport/PrinterDiscovery
+│   └── label_print_transport_windows/ # backend Windows (spooler/USB) de label_print_transport
 └── apps/
     └── playground/                  # sandbox interno, apenas para testar engines/renderers durante o desenvolvimento — não é entregável
 ```
@@ -392,6 +406,20 @@ Responsabilidades detalhadas:
 - Aplicar alinhamento (quando o elemento pertence a um container/guia de alinhamento).
 - Expandir `GroupElement` recursivamente em elementos resolvidos "achatados", preservando z-index relativo.
 - Validar dimensões mínimas (ex.: barcode não pode ter altura resolvida ≤ 0) — erros de layout são reportados como `LayoutException`, nunca silenciados.
+
+> **Adição pós-etapa 18 (colunas de rolo)**: rolos de etiqueta com mais de uma coluna
+> lado a lado (ex.: etiqueta de 50×30mm num rolo de 2 colunas) são descritos
+> declarativamente em `PageConfig.columns`/`PageConfig.columnGap` — a etiqueta "sabe" em
+> qual rolo foi desenhada, sem precisar de uma tela de configuração separada na hora de
+> imprimir. `LabelLayoutEngine.resolveBatch(document, records)` tila uma lista de dados
+> (um mapa por etiqueta) em linhas de `columns` etiquetas, deslocando cada coluna em X
+> antes da conversão mm→dots — o deslocamento participa da composição de rotação/grupo
+> como qualquer outra posição, não é um pós-processamento à parte. Cada `ResolvedDocument`
+> retornado é uma linha física inteira do rolo (mesmo que a última linha tenha menos
+> registros que colunas), porque é isso que o sensor de gap da impressora enxerga como uma
+> etiqueta. Com `columns == 1`, o comportamento é idêntico a chamar `resolve()` uma vez por
+> registro — `resolveBatch` não é um caminho de código separado, só uma forma de tilar o
+> mesmo `resolve()`. Ver `docs/ROADMAP.md`, etapa 19.
 
 ## 10. Sistema de expressões
 
@@ -712,6 +740,20 @@ dependencies:
   label_renderer_argox:
     path: ../label_designer_workspace/packages/label_renderer_argox
   # + label_renderer_zebra, label_renderer_tsc, label_renderer_pdf conforme a impressora usada
+```
+
+`label_print_transport` (e seus backends, ex. `label_print_transport_windows`) seguem a
+mesma regra do controle fino: **nunca** entram em `label_designer_kit` — diferente de um
+`label_renderer_*` (saída pura Dart), transporte é o passo que efetivamente fala com o
+sistema operacional/hardware, então só o app que realmente imprime declara essas
+dependências:
+
+```yaml
+dependencies:
+  label_print_transport:
+    path: ../label_designer_workspace/packages/label_print_transport
+  label_print_transport_windows:
+    path: ../label_designer_workspace/packages/label_print_transport_windows
 ```
 
 Ver o passo a passo completo em [`docs/INTEGRATION.md`](./INTEGRATION.md).

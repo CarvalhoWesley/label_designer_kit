@@ -24,6 +24,10 @@ Formato de cada etapa ao ser executada: **objetivo**, **arquivos criados**, **ex
 | 15 | Renderer PDF | `label_renderer_pdf` | Exportação vetorial validada visualmente |
 | 16 | Renderers de impressora | `label_renderer_argox`, `label_renderer_zebra`, `label_renderer_tsc` | Um por vez; bytes de saída validados contra fixtures de comandos conhecidos (PPLA/PPLB, ZPL II, TSPL) |
 | 17 | Guia de integração | (documentação + smoke test em `apps/playground`) | Passo a passo de como adicionar os pacotes via `path:`/`git:` no `pubspec.yaml` de um projeto Flutter existente e embutir `LabelDesigner` + um `label_renderer_*` — validado num projeto Flutter de teste real, fora deste workspace |
+| 18 | Ajustes de UX no editor visual | `label_canvas`, `label_property_panel`, `label_designer` | Canvas, painel de propriedades e fluxo de salvar refinados a partir do uso real em `apps/label_studio` |
+| 19 | Colunas de rolo | `label_core`, `label_layout_engine` | `PageConfig.columns`/`columnGap` declaram quantas etiquetas o rolo tem lado a lado; `LabelLayoutEngine.resolveBatch` tila um lote de registros em linhas de N colunas — testado, `columns == 1` idêntico ao `resolve()` atual |
+| 20 | Transporte de impressão | `label_print_transport`, `label_print_transport_windows` | Interface `PrintTransport`/`PrinterDiscovery` reutilizável + backend Windows (spooler/USB), validado manualmente contra uma impressora Argox real |
+| 21 | Impressão em lote no app | `apps/label_studio` | `print_dialog.dart` usa os transports novos em vez de chamar `windows_printer` direto, e ganha um caminho de impressão em lote (`resolveBatch`) distribuindo registros pelas colunas do rolo |
 
 Não há etapas de "app standalone" (desktop/web) — o consumidor final é o projeto Flutter já existente do usuário, que importa os pacotes conforme a [seção 20 da arquitetura](./ARCHITECTURE.md#20-integração-no-projeto-existente-do-usuário).
 
@@ -31,7 +35,7 @@ Não há etapas de "app standalone" (desktop/web) — o consumidor final é o pr
 
 - Novos renderers: `label_renderer_brother`, `_godex`, `_datamax`, `_sato`, `_cab`, `_epson`, `_bixolon`, `_elgin` — cada um só implementa `BaseRenderer`.
 - `TableElement` — modelo já reservado em `label_core`, implementação de renderização adiada.
-- Camada de transporte de impressão (USB/rede/Bluetooth) — fica a critério do projeto do usuário; opcionalmente um pacote `label_print_transport` reutilizável, consumido apenas por projetos externos, nunca pelo domínio.
+- Novos backends de `label_print_transport` (rede/TCP porta 9100, serial, Bluetooth) — cada um só implementa `PrintTransport`, seguindo o mesmo padrão de `label_print_transport_windows` (etapa 20).
 - Colaboração/multiplayer — viabilizado pela escolha de `Command` imutável no `label_history`.
 
 ## Regra de avanço

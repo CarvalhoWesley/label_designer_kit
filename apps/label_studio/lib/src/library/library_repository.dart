@@ -66,15 +66,19 @@ class LibraryRepository {
       }
     }
     entries.sort(
-      (a, b) =>
-          b.document.metadata.updatedAt.compareTo(a.document.metadata.updatedAt),
+      (a, b) => b.document.metadata.updatedAt.compareTo(
+        a.document.metadata.updatedAt,
+      ),
     );
     return entries;
   }
 
   /// Creates and saves a brand-new blank template.
   Future<LibraryEntry> create({String name = 'Nova etiqueta'}) {
-    return save(id: const Uuid().v4(), document: LabelDocument.blank(name: name));
+    return save(
+      id: const Uuid().v4(),
+      document: LabelDocument.blank(name: name),
+    );
   }
 
   /// Encodes [document] (stamping a fresh thumbnail and `updatedAt`) and
@@ -113,7 +117,8 @@ class LibraryRepository {
     final now = DateTime.now();
     try {
       final data = {
-        for (final variable in document.variables) variable.name: variable.defaultValue,
+        for (final variable in document.variables)
+          variable.name: variable.defaultValue,
       };
       const layoutEngine = LabelLayoutEngine();
       final resolved = layoutEngine.resolve(document, data);
@@ -133,7 +138,9 @@ class LibraryRepository {
         ),
       );
     } catch (_) {
-      return document.copyWith(metadata: document.metadata.copyWith(updatedAt: now));
+      return document.copyWith(
+        metadata: document.metadata.copyWith(updatedAt: now),
+      );
     }
   }
 }

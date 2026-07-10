@@ -45,9 +45,7 @@ class LibraryCard extends StatelessWidget {
               child: ColoredBox(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 child: thumbnail == null
-                    ? const Center(
-                        child: Icon(Icons.label_outline, size: 48),
-                      )
+                    ? const Center(child: Icon(Icons.label_outline, size: 48))
                     : Center(
                         child: Image.memory(
                           base64Decode(thumbnail),

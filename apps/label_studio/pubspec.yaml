@@ -18,9 +18,12 @@ dependencies:
     sdk: flutter
   label_designer_kit:
     path: ../../packages/label_designer_kit
+  label_print_transport:
+    path: ../../packages/label_print_transport
+  label_print_transport_windows:
+    path: ../../packages/label_print_transport_windows
   file_picker: ^8.1.0
   path_provider: ^2.1.0
-  windows_printer: ^0.2.1
   uuid: ^4.5.0
   intl: ^0.19.0
 

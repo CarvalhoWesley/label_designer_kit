@@ -15,7 +15,10 @@ class PageConfig extends Equatable {
     this.dpi = Dpi.dpi203,
     this.orientation = PageOrientation.portrait,
     this.margins = const EdgeInsets.zero(),
-  });
+    this.columns = 1,
+    this.columnGap = 0,
+  }) : assert(columns >= 1, 'columns must be at least 1'),
+       assert(columnGap >= 0, 'columnGap cannot be negative');
 
   factory PageConfig.fromJson(Map<String, dynamic> json) {
     return PageConfig(
@@ -29,6 +32,8 @@ class PageConfig extends Equatable {
       margins: json['margins'] == null
           ? const EdgeInsets.zero()
           : EdgeInsets.fromJson(json['margins'] as Map<String, dynamic>),
+      columns: json['columns'] as int? ?? 1,
+      columnGap: (json['columnGap'] as num?)?.toDouble() ?? 0,
     );
   }
 
@@ -45,6 +50,17 @@ class PageConfig extends Equatable {
   final PageOrientation orientation;
   final EdgeInsets margins;
 
+  /// Number of labels laid out side by side on the physical roll this page
+  /// was designed for, e.g. `2` for a roll with two columns of labels.
+  /// Used by `LabelLayoutEngine.resolveBatch` to tile a batch of records
+  /// across columns — has no effect on `resolve()`, which always resolves
+  /// a single label. Defaults to `1` (single-column roll).
+  final int columns;
+
+  /// Horizontal gap between columns, in millimeters. Ignored when
+  /// [columns] is `1`.
+  final double columnGap;
+
   PageConfig copyWith({
     double? width,
     double? height,
@@ -52,6 +68,8 @@ class PageConfig extends Equatable {
     Dpi? dpi,
     PageOrientation? orientation,
     EdgeInsets? margins,
+    int? columns,
+    double? columnGap,
   }) {
     return PageConfig(
       width: width ?? this.width,
@@ -60,6 +78,8 @@ class PageConfig extends Equatable {
       dpi: dpi ?? this.dpi,
       orientation: orientation ?? this.orientation,
       margins: margins ?? this.margins,
+      columns: columns ?? this.columns,
+      columnGap: columnGap ?? this.columnGap,
     );
   }
 
@@ -70,8 +90,19 @@ class PageConfig extends Equatable {
     'dpi': dpi.value,
     'orientation': orientation.name,
     'margins': margins.toJson(),
+    'columns': columns,
+    'columnGap': columnGap,
   };
 
   @override
-  List<Object?> get props => [width, height, unit, dpi, orientation, margins];
+  List<Object?> get props => [
+    width,
+    height,
+    unit,
+    dpi,
+    orientation,
+    margins,
+    columns,
+    columnGap,
+  ];
 }

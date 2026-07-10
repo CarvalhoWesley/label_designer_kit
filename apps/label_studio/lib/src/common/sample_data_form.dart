@@ -65,7 +65,9 @@ class _SampleDataFormState extends State<SampleDataForm> {
   }
 
   Widget _fieldFor(LabelVariable variable) {
-    final helperText = variable.description.isEmpty ? null : variable.description;
+    final helperText = variable.description.isEmpty
+        ? null
+        : variable.description;
     switch (variable.type) {
       case VariableType.boolean:
         return SwitchListTile(

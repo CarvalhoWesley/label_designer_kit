@@ -11,7 +11,11 @@ import '../print/print_dialog.dart';
 /// save/export/print, which `LabelDesigner` deliberately doesn't know how
 /// to do on its own.
 class EditorScreen extends StatefulWidget {
-  const EditorScreen({super.key, required this.repository, required this.entry});
+  const EditorScreen({
+    super.key,
+    required this.repository,
+    required this.entry,
+  });
 
   final LibraryRepository repository;
   final LibraryEntry entry;

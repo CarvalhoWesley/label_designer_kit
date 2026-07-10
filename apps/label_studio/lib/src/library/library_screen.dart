@@ -37,7 +37,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
   Future<void> _openEntry(LibraryEntry entry) async {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
-        builder: (_) => EditorScreen(repository: widget.repository, entry: entry),
+        builder: (_) =>
+            EditorScreen(repository: widget.repository, entry: entry),
       ),
     );
     _refresh();
@@ -88,7 +89,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(child: Text('Falha ao carregar biblioteca: ${snapshot.error}'));
+            return Center(
+              child: Text('Falha ao carregar biblioteca: ${snapshot.error}'),
+            );
           }
           final entries = snapshot.data ?? const [];
           if (entries.isEmpty) {

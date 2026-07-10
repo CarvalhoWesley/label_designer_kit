@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:label_designer_kit/label_designer_kit.dart' hide EdgeInsets;
-import 'package:windows_printer/windows_printer.dart';
+import 'package:label_print_transport_windows/label_print_transport_windows.dart';
 
 import '../common/live_preview.dart';
 import '../common/sample_data_form.dart';
@@ -9,11 +9,17 @@ import '../common/sample_data_form.dart';
 enum _PrintFormat { pdf, ppla }
 
 /// Resolves [document] with sample data and sends the result straight to a
-/// Windows printer: a PDF through the system print pipeline (works with any
-/// installed driver), or a raw PPLA byte stream for a directly-connected
-/// Argox thermal printer (see `windows_printer`'s `printRawData`, which
-/// bypasses Windows' own rendering so the printer gets exactly the bytes
-/// `label_renderer_argox` produced).
+/// Windows printer via `label_print_transport_windows`: a PDF through the
+/// system print pipeline (works with any installed driver), or a raw PPLA
+/// byte stream for a directly-connected Argox thermal printer
+/// ([WindowsRawPrintTransport], which bypasses Windows' own rendering so
+/// the printer gets exactly the bytes `label_renderer_argox` produced).
+///
+/// When [LabelDocument.page]'s `columns` is more than 1 (a multi-column
+/// roll — see `docs/ARCHITECTURE.md`, "colunas de rolo"), this dialog also
+/// offers a batch mode: one data record per physical label, tiled across
+/// columns via `LabelLayoutEngine.resolveBatch` and sent to the printer one
+/// physical row at a time.
 class PrintDialog extends StatefulWidget {
   const PrintDialog({super.key, required this.document});
 
@@ -37,6 +43,15 @@ class _PrintDialogState extends State<PrintDialog> {
   int _darkness = 10;
   ArgoxTransferType _transferType = ArgoxTransferType.directThermal;
 
+  /// Whether the roll this document was designed for has more than one
+  /// column — when it does, the dialog offers batch printing tiled across
+  /// columns via `LabelLayoutEngine.resolveBatch` instead of just the
+  /// single-label path.
+  bool get _hasColumns => widget.document.page.columns > 1;
+
+  bool _batchMode = false;
+  List<Map<String, dynamic>> _records = [const {}];
+
   String? _selectedPrinter;
   List<String> _printers = const [];
   bool _loadingPrinters = true;
@@ -51,7 +66,7 @@ class _PrintDialogState extends State<PrintDialog> {
   Future<void> _loadPrinters() async {
     List<String> printers;
     try {
-      printers = await WindowsPrinter.getAvailablePrinters();
+      printers = await const WindowsPrinterDiscovery().listAvailable();
     } catch (_) {
       printers = const [];
     }
@@ -67,37 +82,43 @@ class _PrintDialogState extends State<PrintDialog> {
     setState(() => _isPrinting = true);
     try {
       const layoutEngine = LabelLayoutEngine();
-      final resolved = layoutEngine.resolve(widget.document, _sampleData);
-      switch (_format) {
-        case _PrintFormat.pdf:
-          const renderer = PdfRenderer();
-          final bytes = await renderer.render(resolved, const PdfRendererOptions());
-          await WindowsPrinter.printPdf(
-            printerName: _selectedPrinter,
-            data: bytes,
-            copies: _copies,
-          );
-        case _PrintFormat.ppla:
-          const renderer = ArgoxRenderer();
-          final bytes = await renderer.render(
-            resolved,
-            ArgoxRendererOptions(
-              darkness: _darkness,
+      final resolvedRows = _batchMode && _hasColumns
+          ? layoutEngine.resolveBatch(widget.document, _records)
+          : [layoutEngine.resolve(widget.document, _sampleData)];
+
+      for (final resolved in resolvedRows) {
+        switch (_format) {
+          case _PrintFormat.pdf:
+            const renderer = PdfRenderer();
+            final bytes = await renderer.render(
+              resolved,
+              const PdfRendererOptions(),
+            );
+            await WindowsPdfPrintTransport(
               copies: _copies,
-              transferType: _transferType,
-            ),
-          );
-          await WindowsPrinter.printRawData(
-            printerName: _selectedPrinter,
-            data: bytes,
-            useRawDatatype: true,
-          );
+            ).send(bytes, target: _selectedPrinter);
+          case _PrintFormat.ppla:
+            const renderer = ArgoxRenderer();
+            final bytes = await renderer.render(
+              resolved,
+              ArgoxRendererOptions(
+                darkness: _darkness,
+                copies: _copies,
+                transferType: _transferType,
+                dialect: ArgoxDialect.ppla,
+              ),
+            );
+            await const WindowsRawPrintTransport().send(
+              bytes,
+              target: _selectedPrinter,
+            );
+        }
       }
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Enviado para a impressora')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enviado para a impressora')),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -155,7 +176,10 @@ class _PrintDialogState extends State<PrintDialog> {
                                 child: Text('Impressora padrão do sistema'),
                               ),
                               for (final printer in _printers)
-                                DropdownMenuItem(value: printer, child: Text(printer)),
+                                DropdownMenuItem(
+                                  value: printer,
+                                  child: Text(printer),
+                                ),
                             ],
                             onChanged: (printer) =>
                                 setState(() => _selectedPrinter = printer),
@@ -179,7 +203,25 @@ class _PrintDialogState extends State<PrintDialog> {
                     ),
                     const SizedBox(height: 12),
                     ..._optionsFor(_format),
-                    if (widget.document.variables.isNotEmpty) ...[
+                    if (_hasColumns) ...[
+                      const Divider(height: 24),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Impressão em lote'),
+                        subtitle: Text(
+                          'Rolo com ${widget.document.page.columns} colunas — '
+                          'distribui vários registros pelas colunas '
+                          'automaticamente.',
+                        ),
+                        value: _batchMode,
+                        onChanged: (value) =>
+                            setState(() => _batchMode = value),
+                      ),
+                    ],
+                    if (_batchMode && _hasColumns) ...[
+                      const SizedBox(height: 8),
+                      _buildBatchRecords(context),
+                    ] else if (widget.document.variables.isNotEmpty) ...[
                       const Divider(height: 24),
                       Text(
                         'Dados de amostra',
@@ -295,5 +337,75 @@ class _PrintDialogState extends State<PrintDialog> {
           ),
         ];
     }
+  }
+
+  /// Data-entry UI for batch printing: one row per record when the
+  /// document declares variables (reusing [SampleDataForm] per row), or
+  /// just a count when it doesn't (e.g. printing N identical labels tiled
+  /// across the roll's columns).
+  Widget _buildBatchRecords(BuildContext context) {
+    if (widget.document.variables.isEmpty) {
+      return Row(
+        children: [
+          const Text('Quantidade de etiquetas'),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Slider(
+              value: _records.length.toDouble(),
+              min: 1,
+              max: 50,
+              divisions: 49,
+              label: '${_records.length}',
+              onChanged: (value) => setState(
+                () => _records = List.generate(value.round(), (_) => const {}),
+              ),
+            ),
+          ),
+          SizedBox(width: 32, child: Text('${_records.length}')),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < _records.length; i++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('#${i + 1}'),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: SampleDataForm(
+                    // Keyed by index, not a stable record id — removing a
+                    // row other than the last one re-seeds that row's form
+                    // state from the record that shifted into its slot,
+                    // rather than preserving in-progress edits. Acceptable
+                    // for this first cut; revisit if that proves annoying.
+                    key: ValueKey(i),
+                    variables: widget.document.variables,
+                    onChanged: (data) => _records[i] = data,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.remove_circle_outline),
+                  tooltip: 'Remover registro',
+                  onPressed: _records.length <= 1
+                      ? null
+                      : () => setState(() => _records.removeAt(i)),
+                ),
+              ],
+            ),
+          ),
+        TextButton.icon(
+          onPressed: () => setState(() => _records = [..._records, const {}]),
+          icon: const Icon(Icons.add),
+          label: const Text('Adicionar registro'),
+        ),
+      ],
+    );
   }
 }

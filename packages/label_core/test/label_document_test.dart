@@ -80,6 +80,26 @@ void main() {
       expect(decoded.variables, isEmpty);
       expect(decoded.elements, isEmpty);
       expect(decoded.metadata.history, isEmpty);
+      expect(decoded.page.columns, 1);
+      expect(decoded.page.columnGap, 0);
+    });
+
+    test('round-trips columns/columnGap through JSON', () {
+      final now = DateTime.utc(2026, 7, 2);
+      final document = LabelDocument(
+        name: 'Rolo de 2 colunas',
+        page: const PageConfig(width: 50, height: 30, columns: 2, columnGap: 3),
+        metadata: DocumentMetadata(createdAt: now, updatedAt: now),
+      );
+
+      final json = document.toJson();
+      expect(json['page'], containsPair('columns', 2));
+      expect(json['page'], containsPair('columnGap', 3.0));
+
+      final decoded = LabelDocument.fromJson(json);
+      expect(decoded, document);
+      expect(decoded.page.columns, 2);
+      expect(decoded.page.columnGap, 3);
     });
   });
 

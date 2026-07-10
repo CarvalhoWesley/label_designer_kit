@@ -22,6 +22,13 @@
 /// nunca fizeram parte da API pretendida para o consumidor (ver
 /// `docs/ARCHITECTURE.md`, seções 3–7).
 ///
+/// `label_print_transport`/`label_print_transport_windows` (envio de bytes
+/// já renderizados para uma impressora física) também **não** são
+/// reexportados aqui, de propósito — diferente de um `label_renderer_*`
+/// (só produz bytes), transporte fala diretamente com o SO/hardware, então
+/// só o app que efetivamente imprime declara essas dependências (ver
+/// `docs/ARCHITECTURE.md`, seção 20).
+///
 /// **Uma armadilha conhecida**: `label_core.EdgeInsets` (margens em mm) e
 /// `flutter/material.dart`'s `EdgeInsets` têm o mesmo nome. Se seu arquivo
 /// importar os dois, use `import 'package:flutter/material.dart' hide

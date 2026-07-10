@@ -143,7 +143,10 @@ class _ExportDialogState extends State<ExportDialog> {
                       decoration: const InputDecoration(labelText: 'Formato'),
                       items: [
                         for (final format in _ExportFormat.values)
-                          DropdownMenuItem(value: format, child: Text(format.label)),
+                          DropdownMenuItem(
+                            value: format,
+                            child: Text(format.label),
+                          ),
                       ],
                       onChanged: (format) =>
                           setState(() => _format = format ?? _format),
@@ -174,7 +177,9 @@ class _ExportDialogState extends State<ExportDialog> {
                       child: Icon(Icons.description_outlined, size: 96),
                     )
                   : ColoredBox(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       child: LivePreview(
                         document: widget.document,
                         sampleData: _sampleData,
@@ -207,11 +212,15 @@ class _ExportDialogState extends State<ExportDialog> {
     switch (format) {
       case _ExportFormat.label:
         return const [
-          Text('Salva o documento editável, para reabrir aqui ou em outra instância deste app.'),
+          Text(
+            'Salva o documento editável, para reabrir aqui ou em outra instância deste app.',
+          ),
         ];
       case _ExportFormat.pdf:
         return const [
-          Text('PDF vetorial pronto para visualização ou impressão em qualquer sistema.'),
+          Text(
+            'PDF vetorial pronto para visualização ou impressão em qualquer sistema.',
+          ),
         ];
       case _ExportFormat.png:
         return [

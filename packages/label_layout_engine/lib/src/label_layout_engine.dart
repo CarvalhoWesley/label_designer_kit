@@ -15,14 +15,6 @@ class _AncestorFrame {
     required this.pivotLocal,
   });
 
-  /// The root frame: elements at the top of `LabelDocument.elements` are
-  /// positioned directly in absolute page coordinates, unrotated.
-  static const root = _AncestorFrame(
-    absoluteCenter: Point.zero(),
-    absoluteRotationDegrees: 0,
-    pivotLocal: Point.zero(),
-  );
-
   final Point absoluteCenter;
   final double absoluteRotationDegrees;
 
@@ -55,19 +47,86 @@ class LabelLayoutEngine {
       dpi: dpi,
     );
 
-    final resolvedElements = <ResolvedElement>[];
-    for (final element in document.elements) {
-      resolvedElements.addAll(
-        _resolveElement(element, _AncestorFrame.root, dpi, payloadResolver),
-      );
-    }
-
     return ResolvedDocument(
       widthDots: dpi.mmToDots(document.page.width),
       heightDots: dpi.mmToDots(document.page.height),
       dpi: dpi.value,
-      elements: resolvedElements,
+      elements: _resolveElements(document, payloadResolver, dpi, 0),
     );
+  }
+
+  /// Resolves a batch of [records] (one data map per label) against
+  /// [document], tiling them across `document.page.columns` columns the
+  /// way they'll physically sit on the roll — see `docs/ARCHITECTURE.md`
+  /// (colunas de rolo) and `docs/ROADMAP.md` etapa 19.
+  ///
+  /// Each returned [ResolvedDocument] is one physical row of the roll: its
+  /// `widthDots`/`heightDots` always span the *full* row (`columns` labels
+  /// plus the gaps between them), even for a trailing row with fewer than
+  /// `columns` records, because that's what the printer's gap sensor sees
+  /// as a single physical label. With `document.page.columns == 1`, this
+  /// is equivalent, record by record, to calling [resolve] once per
+  /// record.
+  List<ResolvedDocument> resolveBatch(
+    LabelDocument document,
+    List<Map<String, dynamic>> records,
+  ) {
+    final page = document.page;
+    final dpi = page.dpi;
+    final columns = page.columns;
+    final rowWidthDots = dpi.mmToDots(
+      columns * page.width + (columns - 1) * page.columnGap,
+    );
+    final rowHeightDots = dpi.mmToDots(page.height);
+
+    final rows = <ResolvedDocument>[];
+    for (var start = 0; start < records.length; start += columns) {
+      final rowRecords = records.skip(start).take(columns);
+      final rowElements = <ResolvedElement>[];
+      var column = 0;
+      for (final data in rowRecords) {
+        final payloadResolver = PayloadResolver(
+          document: document,
+          data: data,
+          expressionEngine: expressionEngine,
+          dpi: dpi,
+        );
+        final offsetXMm = column * (page.width + page.columnGap);
+        rowElements.addAll(
+          _resolveElements(document, payloadResolver, dpi, offsetXMm),
+        );
+        column++;
+      }
+      rows.add(
+        ResolvedDocument(
+          widthDots: rowWidthDots,
+          heightDots: rowHeightDots,
+          dpi: dpi.value,
+          elements: rowElements,
+        ),
+      );
+    }
+    return rows;
+  }
+
+  List<ResolvedElement> _resolveElements(
+    LabelDocument document,
+    PayloadResolver payloadResolver,
+    Dpi dpi,
+    double offsetXMm,
+  ) {
+    final rootFrame = _AncestorFrame(
+      absoluteCenter: Point(x: offsetXMm, y: 0),
+      absoluteRotationDegrees: 0,
+      pivotLocal: Point.zero(),
+    );
+    final resolvedElements = <ResolvedElement>[];
+    for (final element in document.elements) {
+      resolvedElements.addAll(
+        _resolveElement(element, rootFrame, dpi, payloadResolver),
+      );
+    }
+    return resolvedElements;
   }
 
   List<ResolvedElement> _resolveElement(
