@@ -1,0 +1,33 @@
+name: label_studio
+description: >
+  App final de produção: configura, gera, salva e imprime etiquetas para
+  serem usadas por aplicações externas. Mantém uma biblioteca local de
+  modelos `.label` e exporta/imprime PDF, PNG e PPLA (Argox), consumindo
+  tudo via label_designer_kit — a mesma única dependência prevista para
+  qualquer projeto Flutter consumidor (ver docs/INTEGRATION.md e
+  docs/ARCHITECTURE.md, seção 20).
+version: 1.0.0+1
+publish_to: none
+
+environment:
+  sdk: ^3.8.1
+  flutter: ">=3.32.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  label_designer_kit:
+    path: ../../packages/label_designer_kit
+  file_picker: ^8.1.0
+  path_provider: ^2.1.0
+  windows_printer: ^0.2.1
+  uuid: ^4.5.0
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
