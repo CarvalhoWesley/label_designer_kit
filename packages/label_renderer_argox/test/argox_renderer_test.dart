@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 
 const _textStyle = ResolvedTextStyle(
   fontFamily: 'Roboto',
-  fontSizeDots: 34, // ~12pt at 203dpi -> ASD size code 'A12'
+  fontSizeDots: 34, // ~12pt at 203dpi -> ASD size code '004'
   bold: false,
   italic: false,
   underline: false,
@@ -182,7 +182,7 @@ void main() {
               fontType: '9',
               hScale: '1',
               vScale: '1',
-              fontSubtype: 'A12',
+              fontSubtype: '004',
               y: '0037',
               x: '0005',
               text: 'ABC',
@@ -218,7 +218,7 @@ void main() {
               fontType: '9',
               hScale: '1',
               vScale: '1',
-              fontSubtype: 'A12',
+              fontSubtype: '004',
               y: '0039',
               x: '0000',
               text: 'X',

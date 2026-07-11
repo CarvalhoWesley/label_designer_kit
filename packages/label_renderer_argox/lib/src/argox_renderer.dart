@@ -40,7 +40,8 @@ class ArgoxRenderer extends BaseRenderer {
         ? '1'
         : '0';
     final lengthHundredthsOfInch = pplaDigits(
-      pplaHundredthsOfInch(document.heightDots, document.dpi),
+      pplaHundredthsOfInch(document.heightDots, document.dpi) +
+          pplaMmToHundredthsOfInch(argoxOptions.feedOffsetMm),
       4,
     );
 

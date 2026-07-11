@@ -58,6 +58,13 @@ class _PrintDialogState extends State<PrintDialog> {
   double _offsetXMm = 0;
   double _offsetYMm = 0;
 
+  /// Manual calibration offset (mm) added to the physical label length —
+  /// how far the printer feeds per label cycle, not where content sits
+  /// within it (that's [_offsetXMm]/[_offsetYMm]). Mirrors a printer
+  /// driver's own "sensor/top offset" media setting, unreachable from a
+  /// raw PPLA stream — see [ArgoxRendererOptions.feedOffsetMm].
+  double _feedOffsetMm = 0;
+
   /// Whether the roll this document was designed for has more than one
   /// column — when it does, `_print` always tiles across columns via
   /// `LabelLayoutEngine.resolveBatch` instead of resolving a single label.
@@ -218,6 +225,7 @@ class _PrintDialogState extends State<PrintDialog> {
         dialect: ArgoxDialect.ppla,
         offsetXMm: _offsetXMm,
         offsetYMm: _offsetYMm,
+        feedOffsetMm: _feedOffsetMm,
       ),
     );
   }
@@ -401,6 +409,8 @@ class _PrintDialogState extends State<PrintDialog> {
           ),
           const SizedBox(height: 12),
           _offsetFields(),
+          const SizedBox(height: 12),
+          _feedOffsetField(),
         ];
     }
   }
@@ -443,6 +453,30 @@ class _PrintDialogState extends State<PrintDialog> {
           ),
         ),
       ],
+    );
+  }
+
+  /// How far the printer physically feeds per label cycle, added to the
+  /// `c` (label length) PPLA command — mirrors a printer driver's own
+  /// "sensor/top offset" media setting (see [_feedOffsetMm]). Distinct
+  /// from [_offsetFields], which shifts content position, not feed
+  /// distance.
+  Widget _feedOffsetField() {
+    return TextFormField(
+      initialValue: _feedOffsetMm.toString(),
+      decoration: const InputDecoration(
+        labelText: 'Avanço de papel',
+        suffixText: 'mm',
+        helperText: 'Quanto a impressora avança por etiqueta, além do '
+            'tamanho desenhado — mesmo ajuste do "Deslocamento superior" '
+            'nas Preferências de impressão da impressora.',
+      ),
+      keyboardType: const TextInputType.numberWithOptions(
+        signed: true,
+        decimal: true,
+      ),
+      onChanged: (value) =>
+          _feedOffsetMm = double.tryParse(value) ?? _feedOffsetMm,
     );
   }
 

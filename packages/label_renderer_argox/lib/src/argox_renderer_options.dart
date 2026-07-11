@@ -25,6 +25,7 @@ class ArgoxRendererOptions extends RendererOptions {
     this.transferType = ArgoxTransferType.directThermal,
     this.offsetXMm = 0,
     this.offsetYMm = 0,
+    this.feedOffsetMm = 0,
   }) : assert(darkness >= 2 && darkness <= 20, 'darkness (heat) is 2-20'),
        assert(copies >= 1 && copies <= 9999, 'copies is 1-9999');
 
@@ -48,4 +49,13 @@ class ArgoxRendererOptions extends RendererOptions {
   /// user-supplied value found by trial print.
   final double offsetXMm;
   final double offsetYMm;
+
+  /// Manual calibration offset (millimeters) added to the label length used
+  /// in the `c` command — controls how far the printer physically feeds
+  /// per label cycle, not where content is drawn within it (that's
+  /// [offsetXMm]/[offsetYMm]). Mirrors what a printer driver's own
+  /// "sensor offset"/"top offset" media setting does (e.g. Argox's
+  /// "Deslocamento superior"), which isn't reachable from a raw PPLA
+  /// stream — see `WindowsRawPrintTransport`.
+  final double feedOffsetMm;
 }
