@@ -68,7 +68,9 @@ void main() {
 
       expect(commands, startsWith('\x02qA\r'));
       expect(commands, contains('\x02L\r'));
-      expect(commands, contains('D11\r'));
+      // D22, not D11 — pplaDotSizeCommand defaults to D22 for 203 DPI print
+      // heads (this document's Dpi.dpi203).
+      expect(commands, contains('D22\r'));
       expect(commands, contains('PROD-000123'));
       expect(commands, endsWith('Q0001\rE\r'));
     },

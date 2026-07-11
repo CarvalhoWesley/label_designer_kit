@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:label_designer_kit/label_designer_kit.dart' hide EdgeInsets;
 import 'package:label_print_transport_windows/label_print_transport_windows.dart';
 
@@ -40,11 +44,19 @@ class PrintDialog extends StatefulWidget {
 }
 
 class _PrintDialogState extends State<PrintDialog> {
-  _PrintFormat _format = _PrintFormat.pdf;
+  _PrintFormat _format = _PrintFormat.ppla;
   Map<String, dynamic> _sampleData = const {};
-  int _copies = 1;
+  int _copies = 2;
   int _darkness = 10;
   ArgoxTransferType _transferType = ArgoxTransferType.directThermal;
+
+  /// Manual calibration offset (mm) — compensates for this specific
+  /// printer's mechanical print head/gap-sensor misalignment. There's no
+  /// way to read this automatically (PPLA bypasses the Windows driver
+  /// entirely, see [WindowsRawPrintTransport]), so it's found by trial
+  /// print, the same way BarTender's own "print offset" setting is.
+  double _offsetXMm = 0;
+  double _offsetYMm = 0;
 
   /// Whether the roll this document was designed for has more than one
   /// column — when it does, `_print` always tiles across columns via
@@ -97,10 +109,37 @@ class _PrintDialogState extends State<PrintDialog> {
             ? _records
             : List.generate(_copies, (_) => _sampleData);
         final rows = layoutEngine.resolveBatch(widget.document, records);
-        // copies: 1 — the row count above already *is* the requested
-        // quantity, so the printer must not additionally repeat each row.
-        for (final resolved in rows) {
-          await _renderAndSend(resolved, copies: 1);
+
+        if (_format == _PrintFormat.ppla) {
+          // One raw job for every row, not one job *per* row: sending N
+          // separate spooler jobs back to back let the printer start
+          // processing job N+1's commands before it had physically
+          // finished feeding to the next row, so rows printed on top of
+          // each other on real hardware. PPLA natively supports multiple
+          // labels in a single continuous stream (repeated <STX>L...E
+          // blocks), which is what concatenating the rendered bytes does
+          // — the printer, not our software, then owns the feed timing
+          // between rows.
+          final bytes = <int>[];
+          for (final resolved in rows) {
+            bytes.addAll(await _renderPpla(resolved, copies: 1));
+          }
+          final combined = Uint8List.fromList(bytes);
+          await _copyPplaToClipboard(combined);
+          await const WindowsRawPrintTransport().send(
+            combined,
+            target: _selectedPrinter,
+          );
+        } else {
+          // copies: 1 — the row count above already *is* the requested
+          // quantity, so the printer/driver must not additionally repeat
+          // each row. (PDF pages can't be concatenated as raw bytes the
+          // way PPLA blocks can, so this format still sends one job per
+          // row — a pre-existing limitation, not something this fix
+          // changes.)
+          for (final resolved in rows) {
+            await _renderAndSend(resolved, copies: 1);
+          }
         }
       } else {
         // Single-column roll: one resolve(), and the printer/driver's own
@@ -113,7 +152,14 @@ class _PrintDialogState extends State<PrintDialog> {
       if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enviado para a impressora')),
+        SnackBar(
+          content: Text(
+            _format == _PrintFormat.ppla
+                ? 'Enviado para a impressora (comandos PPLA copiados '
+                      'para a área de transferência)'
+                : 'Enviado para a impressora',
+          ),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -140,21 +186,40 @@ class _PrintDialogState extends State<PrintDialog> {
           copies: copies,
         ).send(bytes, target: _selectedPrinter);
       case _PrintFormat.ppla:
-        const renderer = ArgoxRenderer();
-        final bytes = await renderer.render(
-          resolved,
-          ArgoxRendererOptions(
-            darkness: _darkness,
-            copies: copies,
-            transferType: _transferType,
-            dialect: ArgoxDialect.ppla,
-          ),
-        );
+        final bytes = await _renderPpla(resolved, copies: copies);
+        await _copyPplaToClipboard(bytes);
         await const WindowsRawPrintTransport().send(
           bytes,
           target: _selectedPrinter,
         );
     }
+  }
+
+  /// Copies the exact PPLA bytes about to be sent to the printer to the
+  /// clipboard — while this renderer is still being validated against
+  /// real hardware, this lets a print result be reported back as the
+  /// literal bytes sent, instead of a photo/ruler measurement that leaves
+  /// room for guessing.
+  Future<void> _copyPplaToClipboard(Uint8List bytes) {
+    return Clipboard.setData(ClipboardData(text: latin1.decode(bytes)));
+  }
+
+  Future<Uint8List> _renderPpla(
+    ResolvedDocument resolved, {
+    required int copies,
+  }) {
+    const renderer = ArgoxRenderer();
+    return renderer.render(
+      resolved,
+      ArgoxRendererOptions(
+        darkness: _darkness,
+        copies: copies,
+        transferType: _transferType,
+        dialect: ArgoxDialect.ppla,
+        offsetXMm: _offsetXMm,
+        offsetYMm: _offsetYMm,
+      ),
+    );
   }
 
   @override
@@ -334,8 +399,51 @@ class _PrintDialogState extends State<PrintDialog> {
             onChanged: (value) =>
                 setState(() => _transferType = value ?? _transferType),
           ),
+          const SizedBox(height: 12),
+          _offsetFields(),
         ];
     }
+  }
+
+  /// Manual print-position calibration — compensates for this specific
+  /// printer's mechanical misalignment (see [_offsetXMm]/[_offsetYMm]).
+  /// Not persisted anywhere; found by trial print, one printer at a time.
+  Widget _offsetFields() {
+    return Row(
+      children: [
+        Expanded(
+          child: TextFormField(
+            initialValue: _offsetXMm.toString(),
+            decoration: const InputDecoration(
+              labelText: 'Deslocamento X',
+              suffixText: 'mm',
+            ),
+            keyboardType: const TextInputType.numberWithOptions(
+              signed: true,
+              decimal: true,
+            ),
+            onChanged: (value) =>
+                _offsetXMm = double.tryParse(value) ?? _offsetXMm,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: TextFormField(
+            initialValue: _offsetYMm.toString(),
+            decoration: const InputDecoration(
+              labelText: 'Deslocamento Y',
+              suffixText: 'mm',
+            ),
+            keyboardType: const TextInputType.numberWithOptions(
+              signed: true,
+              decimal: true,
+            ),
+            onChanged: (value) =>
+                _offsetYMm = double.tryParse(value) ?? _offsetYMm,
+          ),
+        ),
+      ],
+    );
   }
 
   /// The "Cópias"/"Quantidade de etiquetas" slider. On a single-column

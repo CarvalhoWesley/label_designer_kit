@@ -98,26 +98,61 @@ void main() {
     });
   });
 
-  group('pplaAsdFontSubtype', () {
-    test('picks the exact subtype when the point size matches exactly', () {
-      // 12pt at 203dpi is 12 * 203 / 72 = 33.83 dots; round-tripping a
-      // dot count derived from an exact point size must land on that
-      // size's subtype.
-      final dots = (12 * 203 / 72).round();
-      expect(pplaAsdFontSubtype(dots, 203), '004'); // sizes[4] == 12pt
+  group('pplaDotSizeCommand', () {
+    test('is D22 for 203 DPI print heads', () {
+      expect(pplaDotSizeCommand(203), 'D22');
     });
 
-    test(
-      'rounds to the nearest of the fixed ASD sizes (4,6,8,10,12,14,16pt)',
-      () {
-        expect(pplaAsdFontSubtype((4 * 203 / 72).round(), 203), '000');
-        expect(pplaAsdFontSubtype((6 * 203 / 72).round(), 203), '001');
-        expect(pplaAsdFontSubtype((16 * 203 / 72).round(), 203), '006');
-        // Halfway-ish between 8 and 10 should land on whichever is closer.
-        final between = ((8 + 10) / 2 * 203 / 72).round();
-        final subtype = pplaAsdFontSubtype(between, 203);
-        expect(['002', '003'], contains(subtype));
-      },
-    );
+    test('is D11 for 300/400/600 DPI print heads', () {
+      expect(pplaDotSizeCommand(300), 'D11');
+      expect(pplaDotSizeCommand(400), 'D11');
+      expect(pplaDotSizeCommand(600), 'D11');
+    });
+  });
+
+  group('pplaHundredthsOfInch', () {
+    test('converts dots at 203dpi to hundredths of an inch', () {
+      // 203 dots at 203dpi is exactly 1.00 inch == 100 hundredths.
+      expect(pplaHundredthsOfInch(203, 203), 100);
+    });
+
+    test('rounds to the nearest hundredth of an inch', () {
+      expect(pplaHundredthsOfInch(75, 203), 37); // 36.945... -> 37
+      expect(pplaHundredthsOfInch(10, 203), 5); // 4.926... -> 5
+    });
+
+    test('is independent of pplaDotSizeCommand — always dots/dpi*100', () {
+      expect(pplaHundredthsOfInch(300, 300), 100);
+      expect(pplaHundredthsOfInch(0, 203), 0);
+    });
+  });
+
+  group('pplaAsdFontSubtype', () {
+    test('picks the exact size code when the point size matches exactly', () {
+      // 12pt at 203dpi is 12 * 203 / 72 = 33.83 dots; round-tripping a
+      // dot count derived from an exact point size must land on that
+      // size's code.
+      final dots = (12 * 203 / 72).round();
+      expect(pplaAsdFontSubtype(dots, 203), 'A12');
+    });
+
+    test('rounds to the nearest of the fixed ASD sizes at 203 DPI '
+        '(6,8,10,12,14,18,24,30,36,48pt — no 4pt/72pt below 300 DPI)', () {
+      // Below the smallest available size (6pt), it clamps to 6pt rather
+      // than emitting the 300-DPI-only 4pt code.
+      expect(pplaAsdFontSubtype((4 * 203 / 72).round(), 203), 'A06');
+      expect(pplaAsdFontSubtype((6 * 203 / 72).round(), 203), 'A06');
+      expect(pplaAsdFontSubtype((18 * 203 / 72).round(), 203), 'A18');
+      expect(pplaAsdFontSubtype((48 * 203 / 72).round(), 203), 'A48');
+      // Halfway-ish between 8 and 10 should land on whichever is closer.
+      final between = ((8 + 10) / 2 * 203 / 72).round();
+      final subtype = pplaAsdFontSubtype(between, 203);
+      expect(['A08', 'A10'], contains(subtype));
+    });
+
+    test('unlocks 4pt and 72pt only at 300 DPI and above', () {
+      expect(pplaAsdFontSubtype((4 * 300 / 72).round(), 300), 'A04');
+      expect(pplaAsdFontSubtype((72 * 300 / 72).round(), 300), 'A72');
+    });
   });
 }

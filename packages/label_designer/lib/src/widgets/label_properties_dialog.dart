@@ -131,9 +131,19 @@ class _LabelPropertiesDialogState extends State<LabelPropertiesDialog> {
                       ),
                     ],
                     onChanged: (value) {
-                      if (value != null) {
+                      if (value != null && value != _page.orientation) {
+                        // Largura/Altura já definem o formato completo da
+                        // etiqueta — não há um consumidor separado de
+                        // `orientation` no resto do pipeline (canvas,
+                        // renderers), então alternar aqui só faz sentido se
+                        // também trocar os valores que o resto do app de
+                        // fato usa.
                         setState(
-                          () => _page = _page.copyWith(orientation: value),
+                          () => _page = _page.copyWith(
+                            orientation: value,
+                            width: _page.height,
+                            height: _page.width,
+                          ),
                         );
                       }
                     },

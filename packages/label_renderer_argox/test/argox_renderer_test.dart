@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 
 const _textStyle = ResolvedTextStyle(
   fontFamily: 'Roboto',
-  fontSizeDots: 34, // ~12pt at 203dpi -> ASD subtype '004'
+  fontSizeDots: 34, // ~12pt at 203dpi -> ASD size code 'A12'
   bold: false,
   italic: false,
   underline: false,
@@ -79,7 +79,7 @@ String _expectedLineCommand({
 
 void main() {
   group('header and footer', () {
-    test('wraps the label in STX-L / D11 / H.. and Q../E', () async {
+    test('wraps the label in STX-L / D.. / H.. and Q../E', () async {
       const document = ResolvedDocument(
         widthDots: 200,
         heightDots: 100,
@@ -89,9 +89,22 @@ void main() {
       final output = await _render(document);
 
       expect(output, contains('\x02L\r'));
-      expect(output, contains('D11\r'));
+      // D22, not D11 — see pplaDotSizeCommand: 203 DPI print heads default
+      // to D22 per the Datamax Class Series 2 Programmer's Manual.
+      expect(output, contains('D22\r'));
       expect(output, contains('H10\r')); // default darkness
       expect(output, endsWith('Q0001\rE\r')); // default copies
+    });
+
+    test('encodes D11 (not D22) for a 300 DPI document', () async {
+      const document = ResolvedDocument(
+        widthDots: 200,
+        heightDots: 100,
+        dpi: 300,
+        elements: [],
+      );
+      final output = await _render(document);
+      expect(output, contains('D11\r'));
     });
 
     test('encodes darkness and copies from ArgoxRendererOptions', () async {
@@ -156,7 +169,9 @@ void main() {
           payload: ResolvedTextPayload(text: 'ABC', style: _textStyle),
         );
         // document height 100, element top=5 height=20 -> PPLA y (bottom of
-        // box, measured from the label's bottom) = 100 - 5 - 20 = 75.
+        // box, measured from the label's bottom) = 100 - 5 - 20 = 75 dots,
+        // converted to hundredths of an inch at 203dpi: round(75*100/203)
+        // = 37. x: round(10*100/203) = 5.
         final output = await _render(_documentWith(element));
 
         expect(
@@ -167,9 +182,9 @@ void main() {
               fontType: '9',
               hScale: '1',
               vScale: '1',
-              fontSubtype: '004',
-              y: '0075',
-              x: '0010',
+              fontSubtype: 'A12',
+              y: '0037',
+              x: '0005',
               text: 'ABC',
             ),
           ),
@@ -193,7 +208,8 @@ void main() {
         );
         final output = await _render(_documentWith(element));
 
-        // 100 degrees snaps to 90 -> orientation code '4'; y = 100-0-20=80.
+        // 100 degrees snaps to 90 -> orientation code '4'; y (dots) =
+        // 100-0-20=80, converted: round(80*100/203) = 39.
         expect(
           output,
           contains(
@@ -202,8 +218,8 @@ void main() {
               fontType: '9',
               hScale: '1',
               vScale: '1',
-              fontSubtype: '004',
-              y: '0080',
+              fontSubtype: 'A12',
+              y: '0039',
               x: '0000',
               text: 'X',
             ),
@@ -235,7 +251,9 @@ void main() {
         );
         final output = await _render(_documentWith(element, heightDots: 40));
 
-        // y (bottom of box) = 40 - 0 - 40 = 0.
+        // y (bottom of box, dots) = 40 - 0 - 40 = 0. x: round(10*100/203)
+        // = 5. height: round(40*100/203) = 20 -- hundredths of an inch,
+        // not dots (bar width stays in dots, see [_encodeBarcode]).
         expect(
           output,
           contains(
@@ -244,9 +262,9 @@ void main() {
               type: 'E', // code-128, showText: true -> uppercase (readable)
               wideBar: '2',
               narrowBar: '2',
-              height: '040',
+              height: '020',
               y: '0000',
-              x: '0010',
+              x: '0005',
               data: '123456',
             ),
           ),
@@ -274,7 +292,8 @@ void main() {
           ),
         );
         final output = await _render(_documentWith(element, heightDots: 40));
-        expect(output, contains('1e22040'));
+        // height in hundredths of an inch: round(40*100/203) = 20.
+        expect(output, contains('1e22020'));
       },
     );
 
@@ -310,7 +329,10 @@ void main() {
             ),
           ),
         );
-        // document height 100 (default), y (bottom) = 100-5-20=75.
+        // document height 100 (default), y (dots, bottom) = 100-5-20=75 ->
+        // round(75*100/203) = 37. x: round(5*100/203) = 2. width:
+        // round(40*100/203) = 20. height: round(20*100/203) = 10.
+        // thickness: round(2*100/203) = 1.
         final output = await _render(_documentWith(element));
 
         expect(
@@ -318,11 +340,11 @@ void main() {
           contains(
             _expectedBoxCommand(
               orientation: '1',
-              y: '0075',
-              x: '0005',
-              width: '0040',
-              height: '0020',
-              thickness: '0002',
+              y: '0037',
+              x: '0002',
+              width: '0020',
+              height: '0010',
+              thickness: '0001',
             ),
           ),
         );
@@ -375,7 +397,8 @@ void main() {
           ),
         ),
       );
-      // document height 100 (default), y (bottom) = 100-0-0=100.
+      // document height 100 (default), y (dots, bottom) = 100-0-0=100 ->
+      // round(100*100/203) = 49. width: round(60*100/203) = 30.
       final output = await _render(_documentWith(element));
 
       expect(
@@ -383,9 +406,9 @@ void main() {
         contains(
           _expectedLineCommand(
             orientation: '1',
-            y: '0100',
+            y: '0049',
             x: '0000',
-            width: '0060',
+            width: '0030',
             height: '0000',
           ),
         ),

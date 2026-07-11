@@ -40,7 +40,7 @@ class ArgoxRenderer extends BaseRenderer {
         ? '1'
         : '0';
     final lengthHundredthsOfInch = pplaDigits(
-      (document.heightDots * 100 / document.dpi).round(),
+      pplaHundredthsOfInch(document.heightDots, document.dpi),
       4,
     );
 
@@ -52,7 +52,7 @@ class ArgoxRenderer extends BaseRenderer {
         'c$lengthHundredthsOfInch$_cr' // label length
         '$_stx'
         'L$_cr' // enter label formatting mode
-        'D11$_cr' // pixel size 1x1 (no dot doubling)
+        '${pplaDotSizeCommand(document.dpi)}$_cr' // dot size, per print head DPI
         'H${pplaDigits(argoxOptions.darkness, 2)}$_cr'; // darkness/heat
   }
 
@@ -69,13 +69,14 @@ class ArgoxRenderer extends BaseRenderer {
     ResolvedDocument document,
     RendererOptions options,
   ) {
+    final argoxOptions = _optionsOf(options);
     switch (element.payload) {
       case ResolvedTextPayload payload:
-        return _encodeText(element, document, payload);
+        return _encodeText(element, document, payload, argoxOptions);
       case ResolvedBarcodePayload payload:
-        return _encodeBarcode(element, document, payload);
+        return _encodeBarcode(element, document, payload, argoxOptions);
       case ResolvedShapePayload payload:
-        return _encodeShape(element, document, payload);
+        return _encodeShape(element, document, payload, argoxOptions);
       case ResolvedQrCodePayload _:
         // PPLA 2D-code support isn't cross-validated against a known byte
         // format yet (see README) — skip rather than emit a guess.
@@ -101,6 +102,7 @@ class ArgoxRenderer extends BaseRenderer {
     ResolvedElement element,
     ResolvedDocument document,
     ResolvedTextPayload payload,
+    ArgoxRendererOptions argoxOptions,
   ) {
     final style = payload.style;
     final orientation = pplaOrientationCode(element.rotationDegrees);
@@ -110,8 +112,16 @@ class ArgoxRenderer extends BaseRenderer {
     const hScale = '1';
     const vScale = '1';
     final fontSubtype = pplaAsdFontSubtype(style.fontSizeDots, document.dpi);
-    final y = pplaDigits(_argoxY(element, document), 4);
-    final x = pplaDigits(element.xDots, 4);
+    final y = pplaDigits(
+      pplaHundredthsOfInch(_argoxY(element, document), document.dpi) +
+          pplaMmToHundredthsOfInch(argoxOptions.offsetYMm),
+      4,
+    );
+    final x = pplaDigits(
+      pplaHundredthsOfInch(element.xDots, document.dpi) +
+          pplaMmToHundredthsOfInch(argoxOptions.offsetXMm),
+      4,
+    );
 
     return '$orientation$fontType$hScale$vScale$fontSubtype$y$x${payload.text}$_cr';
   }
@@ -120,6 +130,7 @@ class ArgoxRenderer extends BaseRenderer {
     ResolvedElement element,
     ResolvedDocument document,
     ResolvedBarcodePayload payload,
+    ArgoxRendererOptions argoxOptions,
   ) {
     final typeCode = pplaBarcodeTypeCode(
       payload.symbology,
@@ -128,10 +139,23 @@ class ArgoxRenderer extends BaseRenderer {
     if (typeCode == null) return ''; // unsupported symbology — skip.
 
     final orientation = pplaOrientationCode(element.rotationDegrees);
+    // Bar width (c/d fields) is the one dimension PPLA keeps in dots —
+    // everything else below is hundredths of an inch.
     final barWidth = pplaScaleCode(payload.moduleWidthDots);
-    final height = pplaDigits(element.heightDots, 3);
-    final y = pplaDigits(_argoxY(element, document), 4);
-    final x = pplaDigits(element.xDots, 4);
+    final height = pplaDigits(
+      pplaHundredthsOfInch(element.heightDots, document.dpi),
+      3,
+    );
+    final y = pplaDigits(
+      pplaHundredthsOfInch(_argoxY(element, document), document.dpi) +
+          pplaMmToHundredthsOfInch(argoxOptions.offsetYMm),
+      4,
+    );
+    final x = pplaDigits(
+      pplaHundredthsOfInch(element.xDots, document.dpi) +
+          pplaMmToHundredthsOfInch(argoxOptions.offsetXMm),
+      4,
+    );
 
     return '$orientation$typeCode$barWidth$barWidth$height$y$x${payload.data}$_cr';
   }
@@ -140,12 +164,27 @@ class ArgoxRenderer extends BaseRenderer {
     ResolvedElement element,
     ResolvedDocument document,
     ResolvedShapePayload payload,
+    ArgoxRendererOptions argoxOptions,
   ) {
     final orientation = pplaOrientationCode(element.rotationDegrees);
-    final y = pplaDigits(_argoxY(element, document), 4);
-    final x = pplaDigits(element.xDots, 4);
-    final width = pplaDigits(element.widthDots, 4);
-    final height = pplaDigits(element.heightDots, 4);
+    final y = pplaDigits(
+      pplaHundredthsOfInch(_argoxY(element, document), document.dpi) +
+          pplaMmToHundredthsOfInch(argoxOptions.offsetYMm),
+      4,
+    );
+    final x = pplaDigits(
+      pplaHundredthsOfInch(element.xDots, document.dpi) +
+          pplaMmToHundredthsOfInch(argoxOptions.offsetXMm),
+      4,
+    );
+    final width = pplaDigits(
+      pplaHundredthsOfInch(element.widthDots, document.dpi),
+      4,
+    );
+    final height = pplaDigits(
+      pplaHundredthsOfInch(element.heightDots, document.dpi),
+      4,
+    );
 
     switch (payload.kind) {
       case ShapeKind.line:
@@ -160,10 +199,11 @@ class ArgoxRenderer extends BaseRenderer {
         // no curve — ellipse/circle render as their bounding box, and
         // ResolvedShapeStyle.fillColor has no PPLA equivalent. Both are
         // documented gaps, not silent data loss.
-        final thickness = pplaDigits(
-          payload.style.strokeWidthDots.clamp(1, 24),
-          4,
-        );
+        final thicknessHundredths = pplaHundredthsOfInch(
+          payload.style.strokeWidthDots,
+          document.dpi,
+        ).clamp(1, 999);
+        final thickness = pplaDigits(thicknessHundredths, 4);
         return '${orientation}X11000$y${x}b$width$height$thickness$thickness$_cr';
     }
   }

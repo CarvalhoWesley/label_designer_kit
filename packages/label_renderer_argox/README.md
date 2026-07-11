@@ -16,7 +16,11 @@ Em vez de adivinhar a partir de memória, o layout de campos deste renderer foi 
 
 Os comandos de **texto** e **código de barras** (formato, largura de campo, ordem dos parâmetros) são idênticos nas três fontes — alta confiança. **Box/linha** têm uma divergência entre fontes (3 dígitos + letra maiúscula vs. 4 dígitos + minúscula); segui a versão mais recente/consistente internamente, mas é o ponto de menor confiança do pacote.
 
-**Nada aqui foi validado contra uma impressora Argox real.** Antes de usar em produção, valide contra o hardware alvo.
+**Duas correções desde então, feitas contra uma impressora Argox real (203 DPI)** — nenhuma das três fontes acima cobria estes dois pontos corretamente:
+1. Os campos de posição/dimensão (X/Y de elemento, altura de código de barras, espessura de caixa) são **centésimos de polegada**, não dots — ver `pplaHundredthsOfInch`.
+2. O código de tamanho da fonte ASD smooth (campo `eee` do comando de texto) segue a tabela `Ann` do manual Datamax Class Series 2 (ex. `A12` para 12pt), não uma tabela numérica `000`-`006` inventada — ver `pplaAsdFontSubtype`. O código antigo enviava `000`-`006`, que ou é reservado (300 DPI+) ou não existe, fazendo a impressora cair num fonte padrão bem maior que o configurado.
+
+O restante (comandos de orientação, código de barras, box/linha) ainda não foi validado contra hardware real além do que está descrito acima.
 
 ## Decisões de arquitetura e limitações conhecidas
 
@@ -24,9 +28,9 @@ Os comandos de **texto** e **código de barras** (formato, largura de campo, ord
 - **Só 4 rotações fixas**: PPLA não suporta rotação arbitrária, apenas 0°/90°/180°/270°, com códigos não-sequenciais (`1`/`4`/`3`/`2`). `rotationDegrees` é arredondado para o múltiplo de 90° mais próximo.
 - **Sem elipse/círculo**: PPLA só tem primitivas de retângulo (`box`, contorno apenas) e linha (`line`, reta ortogonal). `ShapeKind.ellipse`/`.circle` caem para o retângulo delimitador; `ShapeKind.line` diagonal (com `width` e `height` ambos não-nulos) não tem equivalente exato — a impressora provavelmente desenha um retângulo em vez de uma diagonal.
 - **Sem preenchimento sólido**: o comando de caixa do PPLA só desenha contorno; `ResolvedShapeStyle.fillColor` não tem efeito nesta v1.
-- **Fonte sempre ASD (`9`)**: PPLA não tem fontes TrueType nem tamanho arbitrário — só fontes bitmap fixas e uma família "ASD smooth" com 7 tamanhos (4/6/8/10/12/14/16pt). `pplaAsdFontSubtype` arredonda `fontSizeDots` para o tamanho ASD mais próximo. Negrito/itálico não têm equivalente na família ASD e são ignorados nesta v1.
+- **Fonte sempre ASD (`9`)**: PPLA não tem fontes TrueType nem tamanho arbitrário — só fontes bitmap fixas e uma família "ASD smooth" com tamanhos fixos em pt (6/8/10/12/14/18/24/30/36/48 em qualquer DPI; 4 e 72 só a partir de 300 DPI), por `Ann` (Tabela C-6 do manual Datamax Class Series 2). `pplaAsdFontSubtype` arredonda `fontSizeDots` para o tamanho disponível mais próximo. Negrito/itálico não têm equivalente na família ASD e são ignorados nesta v1.
 - **QR Code e imagens não implementados**: nenhuma das três fontes de referência codifica QR em bytes reais (existe uma função de alto nível documentada em uma DLL fechada da Argox, mas não o formato de bytes). Imagem exigiria o subsistema de download de gráficos HEX/BMP do PPLA — fora do escopo desta etapa. Ambos são pulados silenciosamente (elemento não aparece na etiqueta) em vez de lançar exceção ou emitir um palpite não validado.
-- **Unidades**: X/Y/largura/altura dos elementos são passados como estão (`dots`, mesma unidade de `ResolvedElement`) — as três fontes de referência confirmam que PPLA usa contagem de dots diretamente nesses campos, apesar de a documentação chamar PPLA de "independente de resolução" (isso se refere aos comandos de *tamanho da etiqueta*, que usam centésimos de polegada, não às coordenadas de elemento).
+- **Unidades**: X/Y/largura/altura dos elementos, altura de código de barras e espessura de caixa são convertidos de `dots` para **centésimos de polegada** via `pplaHundredthsOfInch` — confirmado no manual Datamax ("Field data is interpreted in hundredths of an inch"), e não como as três fontes de referência sugeriam (dots diretos). A exceção é a largura de barra do código de barras (campos `c`/`d`), que o manual documenta explicitamente em dots.
 
 ## Uso
 

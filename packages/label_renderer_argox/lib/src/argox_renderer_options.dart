@@ -23,6 +23,8 @@ class ArgoxRendererOptions extends RendererOptions {
     this.darkness = 10,
     this.copies = 1,
     this.transferType = ArgoxTransferType.directThermal,
+    this.offsetXMm = 0,
+    this.offsetYMm = 0,
   }) : assert(darkness >= 2 && darkness <= 20, 'darkness (heat) is 2-20'),
        assert(copies >= 1 && copies <= 9999, 'copies is 1-9999');
 
@@ -35,4 +37,15 @@ class ArgoxRendererOptions extends RendererOptions {
   final int copies;
 
   final ArgoxTransferType transferType;
+
+  /// Manual calibration offset (millimeters) added to every element's X/Y
+  /// position before it's sent to the printer — compensates for a print
+  /// head/gap-sensor mechanical offset specific to a given physical
+  /// printer/media, the same kind of adjustment BarTender exposes as
+  /// "print offset". There's no way to read this from the printer or the
+  /// Windows driver (PPLA goes out as a raw byte stream, bypassing the
+  /// driver entirely — see `WindowsRawPrintTransport`), so it has to be a
+  /// user-supplied value found by trial print.
+  final double offsetXMm;
+  final double offsetYMm;
 }
