@@ -12,5 +12,6 @@ export 'src/color/hex_color.dart';
 export 'src/color/label_color_picker.dart';
 export 'src/color/label_color_swatch.dart';
 export 'src/icons/label_icons.dart';
+export 'src/panels/resizable_panel.dart';
 export 'src/ruler/label_ruler.dart';
 export 'src/ruler/ruler_ticks.dart';

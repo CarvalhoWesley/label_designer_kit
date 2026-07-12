@@ -77,14 +77,14 @@ class DesignerToolbar extends StatelessWidget {
               tooltip: 'Salvar',
               onPressed: onSave,
             ),
-            const VerticalDivider(width: 16),
+            const VerticalDivider(width: 12),
           ],
           LabelToolbarButton(
             icon: Icons.settings_outlined,
             tooltip: 'Propriedades da etiqueta',
             onPressed: onEditProperties,
           ),
-          const VerticalDivider(width: 16),
+          const VerticalDivider(width: 12),
           Observer(
             builder: (context) => Row(
               children: [
@@ -101,7 +101,7 @@ class DesignerToolbar extends StatelessWidget {
               ],
             ),
           ),
-          const VerticalDivider(width: 16),
+          const VerticalDivider(width: 12),
           PopupMenuButton<AddableElementType>(
             tooltip: 'Adicionar elemento',
             icon: const Icon(Icons.add_circle_outline),
@@ -120,7 +120,7 @@ class DesignerToolbar extends StatelessWidget {
                 ),
             ],
           ),
-          const VerticalDivider(width: 16),
+          const VerticalDivider(width: 12),
           Observer(
             builder: (context) {
               final hasSelection = selectionStore.hasSelection;
@@ -161,7 +161,7 @@ class DesignerToolbar extends StatelessWidget {
               );
             },
           ),
-          const VerticalDivider(width: 16),
+          const VerticalDivider(width: 12),
           Observer(
             builder: (context) => Row(
               children: [
@@ -173,7 +173,10 @@ class DesignerToolbar extends StatelessWidget {
                 SizedBox(
                   width: 48,
                   child: Text(
-                    '${(viewportStore.zoom * 100).round()}%',
+                    // 100% = actual/real size (ViewportStore.
+                    // pxPerMmAtActualSize), not a raw px/mm ratio — see
+                    // that constant's doc comment.
+                    '${(viewportStore.zoom / ViewportStoreBase.pxPerMmAtActualSize * 100).round()}%',
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -210,7 +213,7 @@ class DesignerToolbar extends StatelessWidget {
                 ),
                 LabelToolbarButton(
                   icon: LabelIcons.snap,
-                  tooltip: 'Snap',
+                  tooltip: 'Ajustar à grade e a outros elementos',
                   selected: viewportStore.snapEnabled,
                   onPressed: viewportStore.toggleSnap,
                 ),

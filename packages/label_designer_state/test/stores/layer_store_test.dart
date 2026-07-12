@@ -63,4 +63,57 @@ void main() {
     s.layer.reorder('layer-a', 5);
     expect(s.layer.layers.firstWhere((l) => l.id == 'layer-a').order, 5);
   });
+
+  test('addLayer appends a new layer above every existing order, and is '
+      'undo-able', () {
+    final s = _setup();
+    s.layer.addLayer(id: 'layer-c', name: 'C');
+
+    expect(s.layer.layers.map((l) => l.id), ['layer-a', 'layer-b', 'layer-c']);
+    expect(s.layer.layers.last.order, greaterThan(_layerB.order));
+    expect(s.history.canUndo, isTrue);
+
+    s.history.undo();
+    expect(s.layer.layers.map((l) => l.id), ['layer-a', 'layer-b']);
+  });
+
+  test('addLayer falls back to a default name when none is given', () {
+    final s = _setup();
+    s.layer.addLayer(id: 'layer-c');
+    expect(s.layer.layers.last.name, isNotEmpty);
+  });
+
+  test('canRemoveLayer is false only when a single layer remains', () {
+    final s = _setup();
+    expect(s.layer.canRemoveLayer('layer-a'), isTrue);
+
+    s.layer.removeLayer('layer-b');
+    expect(s.layer.canRemoveLayer('layer-a'), isFalse);
+  });
+
+  test('removeLayer deletes the layer and every element placed on it, as '
+      'one undo step', () {
+    final s = _setup();
+    s.layer.removeLayer('layer-a');
+
+    expect(s.layer.layers.map((l) => l.id), ['layer-b']);
+    expect(s.document.elements.map((e) => e.id), ['r-2']);
+    expect(s.history.canUndo, isTrue);
+
+    s.history.undo();
+    expect(s.layer.layers.map((l) => l.id), ['layer-a', 'layer-b']);
+    expect(s.document.elements.map((e) => e.id), ['r-1', 'r-2']);
+  });
+
+  test('removeLayer is a no-op when it is the only layer left', () {
+    final s = _setup();
+    s.layer.removeLayer('layer-b');
+    s.layer.removeLayer('layer-a'); // no-op: layer-a is now the only one
+    expect(s.layer.layers.map((l) => l.id), ['layer-a']);
+
+    // Exactly one undo step needed to get back to the original two
+    // layers proves the no-op call above never pushed a second command.
+    s.history.undo();
+    expect(s.layer.layers.map((l) => l.id), ['layer-a', 'layer-b']);
+  });
 }

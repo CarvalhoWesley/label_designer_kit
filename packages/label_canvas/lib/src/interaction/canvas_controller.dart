@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:label_core/label_core.dart';
 import 'package:label_designer_state/label_designer_state.dart';
 
+import '../geometry/alignment_snap.dart';
 import '../geometry/canvas_transform.dart';
 import '../geometry/element_bounds.dart';
 import '../geometry/resize_math.dart';
@@ -39,6 +40,12 @@ class CanvasController {
   static const double handleHitRadiusPx = 8;
   static const double rotationSnapIncrementDegrees = 15;
   static const double minElementSizeMm = 1;
+
+  /// How close (in screen pixels, independent of zoom) an edge needs to
+  /// be to another element's edge before [snapToElements] "magnetically"
+  /// aligns to it — same pixel-radius-independent-of-zoom idea as
+  /// [handleHitRadiusPx].
+  static const double alignmentSnapThresholdPx = 6;
 
   CanvasTransform get transform =>
       CanvasTransform(zoom: viewportStore.zoom, pan: viewportStore.pan);
@@ -189,14 +196,50 @@ class CanvasController {
 
     if (viewportStore.snapEnabled) {
       // Snap the anchor (first) element, then apply the same corrected
-      // delta to the rest, preserving their relative offsets.
-      final anchorStart = _moveStartPositions.values.first;
-      final snapped = snapPoint(
-        Point(x: anchorStart.x + dx, y: anchorStart.y + dy),
-        viewportStore.gridSizeMm,
+      // delta to the rest, preserving their relative offsets. Alignment
+      // to other elements' edges (smart guides) takes priority over grid
+      // snapping, independently per axis — falls back to the grid on
+      // whichever axis didn't get a close-enough alignment match.
+      final anchorEntry = _moveStartPositions.entries.first;
+      final anchorStart = anchorEntry.value;
+      final proposed = Point(x: anchorStart.x + dx, y: anchorStart.y + dy);
+      final gridSnapped = snapPoint(proposed, viewportStore.gridSizeMm);
+
+      final anchorElement = _findElement(anchorEntry.key);
+      AlignmentSnapResult? alignment;
+      if (anchorElement != null) {
+        alignment = snapToElements(
+          moving: ElementBounds(
+            position: proposed,
+            size: anchorElement.size,
+            rotationDegrees: anchorElement.rotation,
+          ),
+          others: [
+            for (final element in documentStore.elements)
+              if (!_moveStartPositions.containsKey(element.id))
+                ElementBounds.of(element),
+          ],
+          thresholdMm: transform.lengthToMm(alignmentSnapThresholdPx),
+        );
+      }
+
+      final snapped = Point(
+        x: alignment != null && alignment.guidesX.isNotEmpty
+            ? alignment.adjustedPosition.x
+            : gridSnapped.x,
+        y: alignment != null && alignment.guidesY.isNotEmpty
+            ? alignment.adjustedPosition.y
+            : gridSnapped.y,
       );
+      canvasStore.setGuides(
+        x: alignment?.guidesX ?? const [],
+        y: alignment?.guidesY ?? const [],
+      );
+
       dx = snapped.x - anchorStart.x;
       dy = snapped.y - anchorStart.y;
+    } else {
+      canvasStore.clearGuides();
     }
 
     canvasStore.updateElementDrag({

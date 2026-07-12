@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:label_core/label_core.dart';
 import 'package:label_designer/label_designer.dart';
+import 'package:label_widgets/label_widgets.dart';
 
 RectangleElement _rect(
   String id, {
@@ -274,6 +275,72 @@ void main() {
     });
   }
 
+  for (final key in [LogicalKeyboardKey.delete, LogicalKeyboardKey.backspace]) {
+    testWidgets(
+      '$key on an empty focused property-panel text field does not delete '
+      'the selected element',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(LabelDesigner(document: _document(elements: [_rect('a')]))),
+        );
+        await tester.pump();
+        await _pressCtrl(tester, LogicalKeyboardKey.keyA);
+        expect(find.text('Geometria'), findsOneWidget);
+
+        final nameField = find.ancestor(
+          of: find.text('Nome'),
+          matching: find.byType(TextField),
+        );
+        expect(nameField, findsOneWidget);
+        await tester.enterText(nameField, '');
+        await tester.pump();
+
+        await tester.sendKeyEvent(key);
+        await tester.pump();
+
+        // The element must still be selected — the properties panel keeps
+        // showing its fields instead of falling back to the "no
+        // selection" placeholder, proving the key never reached
+        // label_designer's document-level delete shortcut.
+        expect(find.text('Geometria'), findsOneWidget);
+        expect(
+          find.text('Selecione um elemento para editar suas propriedades.'),
+          findsNothing,
+        );
+      },
+    );
+  }
+
+  testWidgets(
+    'Backspace still edits text normally inside a focused property-panel '
+    'field instead of being swallowed',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(LabelDesigner(document: _document(elements: [_rect('a')]))),
+      );
+      await tester.pump();
+      await _pressCtrl(tester, LogicalKeyboardKey.keyA);
+      expect(find.text('Geometria'), findsOneWidget);
+
+      final nameField = find.ancestor(
+        of: find.text('Nome'),
+        matching: find.byType(TextField),
+      );
+      expect(nameField, findsOneWidget);
+      await tester.enterText(nameField, 'abc');
+      await tester.pump();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.backspace);
+      await tester.pump();
+
+      final textField = tester.widget<TextField>(nameField);
+      expect(textField.controller?.text, 'ab');
+      // The canvas selection must be untouched too — the character
+      // deletion shouldn't come bundled with also deleting the element.
+      expect(find.text('Geometria'), findsOneWidget);
+    },
+  );
+
   testWidgets('Ctrl+Z/Ctrl+Y and Ctrl+D work as keyboard shortcuts', (
     tester,
   ) async {
@@ -338,6 +405,63 @@ void main() {
         find.text('Selecione um elemento para editar suas propriedades.'),
         findsOneWidget,
       );
+    },
+  );
+
+  testWidgets('"Nova camada" adds a layer, undo-ably', (tester) async {
+    await tester.pumpWidget(_wrap(LabelDesigner(document: _document())));
+    await tester.pump();
+
+    expect(find.text('Base'), findsOneWidget); // the blank document's layer
+    await tester.tap(find.byTooltip('Nova camada'));
+    await tester.pump();
+    expect(find.text('Camada 2'), findsOneWidget);
+
+    await _pressCtrl(tester, LogicalKeyboardKey.keyZ);
+    await tester.pump();
+    expect(find.text('Camada 2'), findsNothing);
+  });
+
+  testWidgets(
+    'deleting a layer with elements asks for confirmation before removing '
+    'the layer and its elements',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(LabelDesigner(document: _document(elements: [_rect('a')]))),
+      );
+      await tester.pump();
+      await tester.tap(find.byTooltip('Nova camada'));
+      await tester.pump();
+
+      // The blank document's only pre-existing layer ("Base") holds the
+      // one element — its delete button must ask for confirmation.
+      await tester.tap(find.byTooltip('Excluir camada').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Excluir camada'), findsOneWidget);
+
+      await tester.tap(find.text('Excluir'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Base'), findsNothing);
+      // The element that lived on the deleted layer is gone too.
+      await _pressCtrl(tester, LogicalKeyboardKey.keyA);
+      expect(
+        find.text('Selecione um elemento para editar suas propriedades.'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    "a document's only layer can't be deleted",
+    (tester) async {
+      await tester.pumpWidget(_wrap(LabelDesigner(document: _document())));
+      await tester.pump();
+
+      final deleteButton = tester.widget<LabelToolbarButton>(
+        find.byTooltip('Não é possível excluir a única camada'),
+      );
+      expect(deleteButton.onPressed, isNull);
     },
   );
 }
