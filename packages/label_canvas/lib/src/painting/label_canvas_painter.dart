@@ -72,12 +72,22 @@ class LabelCanvasPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Panning far enough moves the page/elements outside this widget's own
+    // bounds in local canvas coordinates; without an explicit clip here,
+    // Flutter's CustomPaint doesn't crop that painting to `size`, so it
+    // bleeds into whatever is painted after this widget in the surrounding
+    // Column/Row (the toolbar, the layers/properties sidebars) — confirmed
+    // on real use as the page visually sliding on top of the app's menu
+    // bar while scrolling/panning.
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
     _paintPageBackground(canvas);
     if (data.showGrid) _paintGrid(canvas, size);
     _paintElements(canvas);
     _paintSelection(canvas);
     _paintGuides(canvas, size);
     _paintMarquee(canvas);
+    canvas.restore();
   }
 
   void _paintPageBackground(Canvas canvas) {

@@ -24,13 +24,45 @@ void main() {
     expect(store.pan, const Point(x: 3, y: 8));
   });
 
-  test('resetView restores default zoom and pan', () {
+  test('resetView restores actual-size zoom and zero pan', () {
     final store = ViewportStore()
       ..setZoom(4)
       ..panBy(10, 10);
     store.resetView();
-    expect(store.zoom, 1);
+    expect(store.zoom, ViewportStoreBase.pxPerMmAtActualSize);
     expect(store.pan, const Point.zero());
+  });
+
+  test('a freshly-constructed store defaults to actual size (100%)', () {
+    final store = ViewportStore();
+    expect(store.zoom, ViewportStoreBase.pxPerMmAtActualSize);
+  });
+
+  test('showActualSize sets zoom to pxPerMmAtActualSize and centers the '
+      'page in the viewport', () {
+    final store = ViewportStore()..setZoom(999);
+    store.showActualSize(
+      pageWidthMm: 100,
+      pageHeightMm: 50,
+      viewportWidthPx: 1000,
+      viewportHeightPx: 500,
+    );
+    expect(store.zoom, ViewportStoreBase.pxPerMmAtActualSize);
+    final expectedWidthPx = 100 * ViewportStoreBase.pxPerMmAtActualSize;
+    final expectedHeightPx = 50 * ViewportStoreBase.pxPerMmAtActualSize;
+    expect(store.pan.x, (1000 - expectedWidthPx) / 2);
+    expect(store.pan.y, (500 - expectedHeightPx) / 2);
+  });
+
+  test('showActualSize is a no-op for degenerate page/viewport sizes', () {
+    final store = ViewportStore()..setZoom(4);
+    store.showActualSize(
+      pageWidthMm: 0,
+      pageHeightMm: 50,
+      viewportWidthPx: 1000,
+      viewportHeightPx: 500,
+    );
+    expect(store.zoom, 4);
   });
 
   test('toggles flip their respective booleans', () {

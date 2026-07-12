@@ -6,6 +6,10 @@ import 'package:flutter/material.dart';
 /// Invalid input (unparsable, or outside [min]/[max]) is rejected on
 /// submit: the field snaps back to [value] instead of calling
 /// [onChanged], so callers never observe an out-of-range value.
+///
+/// `label_designer`'s document-level "delete selected element" shortcut
+/// guards itself against firing while a text field like this one has
+/// focus — see [LabeledTextField]'s doc comment.
 class LabeledNumberField extends StatefulWidget {
   const LabeledNumberField({
     super.key,

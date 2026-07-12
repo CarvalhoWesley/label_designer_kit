@@ -202,6 +202,28 @@ mixin _$ViewportStore on ViewportStoreBase, Store {
   }
 
   @override
+  void showActualSize({
+    required double pageWidthMm,
+    required double pageHeightMm,
+    required double viewportWidthPx,
+    required double viewportHeightPx,
+  }) {
+    final _$actionInfo = _$ViewportStoreBaseActionController.startAction(
+      name: 'ViewportStoreBase.showActualSize',
+    );
+    try {
+      return super.showActualSize(
+        pageWidthMm: pageWidthMm,
+        pageHeightMm: pageHeightMm,
+        viewportWidthPx: viewportWidthPx,
+        viewportHeightPx: viewportHeightPx,
+      );
+    } finally {
+      _$ViewportStoreBaseActionController.endAction(_$actionInfo);
+    }
+  }
+
+  @override
   void toggleGrid() {
     final _$actionInfo = _$ViewportStoreBaseActionController.startAction(
       name: 'ViewportStoreBase.toggleGrid',

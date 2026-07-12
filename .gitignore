@@ -8,7 +8,7 @@ pubspec_overrides.yaml
 *.iml
 .idea/
 .vscode/*
-!.vscode/settings.json
+.vscode/settings.json
 !.vscode/extensions.json
 .flutter-plugins
 .flutter-plugins-dependencies

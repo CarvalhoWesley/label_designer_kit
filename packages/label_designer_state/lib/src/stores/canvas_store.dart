@@ -75,13 +75,24 @@ abstract class CanvasStoreBase with Store {
   /// Bumped by [requestFitToView] to ask `label_canvas` to recompute
   /// zoom/pan so the page fills the viewport — `label_canvas` reacts to
   /// this value changing rather than exposing a method, so callers outside
-  /// the widget tree (the toolbar's "fit to view" button, or a document
-  /// swap) don't need a reference to canvas internals.
+  /// the widget tree (the toolbar's "fit to view" button) don't need a
+  /// reference to canvas internals.
   @observable
   int fitToViewRequest = 0;
 
   @action
   void requestFitToView() => fitToViewRequest++;
+
+  /// Bumped by [requestActualSize] to ask `label_canvas` to show the page
+  /// at 100% (actual/real size) instead of an auto-computed "fit" zoom —
+  /// same pattern as [fitToViewRequest], used when a document is first
+  /// loaded/swapped rather than when the user explicitly asks to fit the
+  /// view. See `ViewportStore.showActualSize`.
+  @observable
+  int actualSizeRequest = 0;
+
+  @action
+  void requestActualSize() => actualSizeRequest++;
 
   @computed
   bool get hasActiveGuides =>

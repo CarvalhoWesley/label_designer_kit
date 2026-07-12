@@ -6,6 +6,11 @@ import 'package:flutter/material.dart';
 /// Unlike [LabeledNumberField], any text is valid, so this commits on
 /// every keystroke via [onChanged] rather than waiting for submit —
 /// callers that need undo coalescing debounce on their own end.
+///
+/// `label_designer`'s document-level "delete selected element" shortcut
+/// (Delete/Backspace) guards itself against firing while a text field
+/// like this one has focus — see `_LabelDesignerState._isTextFieldFocused`
+/// — so this widget itself doesn't need to intercept those keys.
 class LabeledTextField extends StatefulWidget {
   const LabeledTextField({
     super.key,
