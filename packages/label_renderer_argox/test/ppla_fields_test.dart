@@ -98,6 +98,18 @@ void main() {
     });
   });
 
+  group('pplaDotMultiplier', () {
+    test('is 2 for 203 DPI print heads', () {
+      expect(pplaDotMultiplier(203), 2);
+    });
+
+    test('is 1 for 300/400/600 DPI print heads', () {
+      expect(pplaDotMultiplier(300), 1);
+      expect(pplaDotMultiplier(400), 1);
+      expect(pplaDotMultiplier(600), 1);
+    });
+  });
+
   group('pplaDotSizeCommand', () {
     test('is D22 for 203 DPI print heads', () {
       expect(pplaDotSizeCommand(203), 'D22');
@@ -131,28 +143,31 @@ void main() {
     test('picks the exact size code when the point size matches exactly', () {
       // 12pt at 203dpi is 12 * 203 / 72 = 33.83 dots; round-tripping a
       // dot count derived from an exact point size must land on that
-      // size's code.
+      // size's code. 12pt is index 3 in pplaAsdFontSizesPt, so at <300 DPI
+      // the numeric code is index+1 = 004.
       final dots = (12 * 203 / 72).round();
-      expect(pplaAsdFontSubtype(dots, 203), 'A12');
+      expect(pplaAsdFontSubtype(dots, 203), '004');
     });
 
     test('rounds to the nearest of the fixed ASD sizes at 203 DPI '
         '(6,8,10,12,14,18,24,30,36,48pt — no 4pt/72pt below 300 DPI)', () {
-      // Below the smallest available size (6pt), it clamps to 6pt rather
-      // than emitting the 300-DPI-only 4pt code.
-      expect(pplaAsdFontSubtype((4 * 203 / 72).round(), 203), 'A06');
-      expect(pplaAsdFontSubtype((6 * 203 / 72).round(), 203), 'A06');
-      expect(pplaAsdFontSubtype((18 * 203 / 72).round(), 203), 'A18');
-      expect(pplaAsdFontSubtype((48 * 203 / 72).round(), 203), 'A48');
+      // Below the smallest available size (6pt), it clamps to 6pt (index 0,
+      // code 001) rather than emitting the 300-DPI-only 4pt code (000).
+      expect(pplaAsdFontSubtype((4 * 203 / 72).round(), 203), '001');
+      expect(pplaAsdFontSubtype((6 * 203 / 72).round(), 203), '001');
+      expect(pplaAsdFontSubtype((18 * 203 / 72).round(), 203), '006');
+      expect(pplaAsdFontSubtype((48 * 203 / 72).round(), 203), '010');
       // Halfway-ish between 8 and 10 should land on whichever is closer.
       final between = ((8 + 10) / 2 * 203 / 72).round();
       final subtype = pplaAsdFontSubtype(between, 203);
-      expect(['A08', 'A10'], contains(subtype));
+      expect(['002', '003'], contains(subtype));
     });
 
     test('unlocks 4pt and 72pt only at 300 DPI and above', () {
-      expect(pplaAsdFontSubtype((4 * 300 / 72).round(), 300), 'A04');
-      expect(pplaAsdFontSubtype((72 * 300 / 72).round(), 300), 'A72');
+      // At >=300 DPI the code is the bare index (0-based) since 000 is a
+      // valid code there (4pt), unlike at <300 DPI where 000 is reserved.
+      expect(pplaAsdFontSubtype((4 * 300 / 72).round(), 300), '000');
+      expect(pplaAsdFontSubtype((72 * 300 / 72).round(), 300), '011');
     });
   });
 }

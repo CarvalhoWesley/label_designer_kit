@@ -33,6 +33,9 @@ migrate_working_dir/
 .pub/
 /build/
 
+# Instalador portátil gerado pelo installer/label_studio.iss
+/dist/
+
 # Symbolication related
 app.*.symbols
 

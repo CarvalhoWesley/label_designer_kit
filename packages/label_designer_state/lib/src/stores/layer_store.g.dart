@@ -60,6 +60,30 @@ mixin _$LayerStore on LayerStoreBase, Store {
   }
 
   @override
+  void addLayer({required String id, String? name}) {
+    final _$actionInfo = _$LayerStoreBaseActionController.startAction(
+      name: 'LayerStoreBase.addLayer',
+    );
+    try {
+      return super.addLayer(id: id, name: name);
+    } finally {
+      _$LayerStoreBaseActionController.endAction(_$actionInfo);
+    }
+  }
+
+  @override
+  void removeLayer(String layerId) {
+    final _$actionInfo = _$LayerStoreBaseActionController.startAction(
+      name: 'LayerStoreBase.removeLayer',
+    );
+    try {
+      return super.removeLayer(layerId);
+    } finally {
+      _$LayerStoreBaseActionController.endAction(_$actionInfo);
+    }
+  }
+
+  @override
   String toString() {
     return '''
 layers: ${layers}

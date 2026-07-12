@@ -96,6 +96,7 @@ class ResolvedBarcodePayload extends ResolvedPayload {
     required this.symbology,
     required this.showText,
     required this.moduleWidthDots,
+    required this.textSizeDots,
   });
 
   final String data;
@@ -103,8 +104,18 @@ class ResolvedBarcodePayload extends ResolvedPayload {
   final bool showText;
   final int moduleWidthDots;
 
+  /// Font size of the human-readable value, in dots. `0` means auto-derived
+  /// from the element's own box height — see [BarcodeElement.textSize].
+  final int textSizeDots;
+
   @override
-  List<Object?> get props => [data, symbology, showText, moduleWidthDots];
+  List<Object?> get props => [
+    data,
+    symbology,
+    showText,
+    moduleWidthDots,
+    textSizeDots,
+  ];
 }
 
 class ResolvedQrCodePayload extends ResolvedPayload {

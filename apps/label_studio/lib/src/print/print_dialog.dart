@@ -10,14 +10,18 @@ import 'package:label_print_transport_windows/label_print_transport_windows.dart
 import '../common/live_preview.dart';
 import '../common/sample_data_form.dart';
 
-enum _PrintFormat { pdf, ppla }
+enum _PrintFormat { pdf, ppla, pplaRaster }
 
 /// Resolves [document] with sample data and sends the result straight to a
 /// Windows printer via `label_print_transport_windows`: a PDF through the
 /// system print pipeline (works with any installed driver), or a raw PPLA
 /// byte stream for a directly-connected Argox thermal printer
 /// ([WindowsRawPrintTransport], which bypasses Windows' own rendering so
-/// the printer gets exactly the bytes `label_renderer_argox` produced).
+/// the printer gets exactly the bytes `label_renderer_argox` produced) —
+/// either native PPLA commands per element, or (`pplaRaster`) the whole
+/// label rasterized as one image via `label_renderer_argox_raster`, which
+/// escapes PPLA's fixed font/shape limits at the cost of a bigger job; see
+/// that package's README.
 ///
 /// When [LabelDocument.page]'s `columns` is more than 1 (a multi-column
 /// roll — see `docs/ARCHITECTURE.md`, "colunas de rolo"), "Cópias" stops
@@ -44,11 +48,11 @@ class PrintDialog extends StatefulWidget {
 }
 
 class _PrintDialogState extends State<PrintDialog> {
-  _PrintFormat _format = _PrintFormat.ppla;
+  _PrintFormat _format = _PrintFormat.pplaRaster;
   Map<String, dynamic> _sampleData = const {};
   int _copies = 2;
   int _darkness = 10;
-  ArgoxTransferType _transferType = ArgoxTransferType.directThermal;
+  ArgoxTransferType _transferType = ArgoxTransferType.thermalTransfer;
 
   /// Manual calibration offset (mm) — compensates for this specific
   /// printer's mechanical print head/gap-sensor misalignment. There's no
@@ -58,10 +62,57 @@ class _PrintDialogState extends State<PrintDialog> {
   double _offsetXMm = 0;
   double _offsetYMm = 0;
 
+  /// Manual calibration offset (mm) added to the physical label length —
+  /// how far the printer feeds per label cycle, not where content sits
+  /// within it (that's [_offsetXMm]/[_offsetYMm]). Mirrors a printer
+  /// driver's own "sensor/top offset" media setting, unreachable from a
+  /// raw PPLA stream — see [ArgoxRendererOptions.feedOffsetMm].
+  double _feedOffsetMm = 2;
+
+  /// PPLA `<STX>I` memory module bank letter, only used by
+  /// [_PrintFormat.pplaRaster] — not confirmed against real hardware yet,
+  /// see [ArgoxRasterRendererOptions.memoryBank].
+  String _memoryBank = 'D';
+
+  /// Whether the rasterized image's rows are sent in reverse (bottom-up)
+  /// order — only used by [_PrintFormat.pplaRaster]. Used to be a
+  /// `flipped` switch that also sent a negative `biHeight` (**confirmed on
+  /// real hardware to hang the printer** — needs a power cycle to
+  /// recover); that's gone now, row order is controlled purely by which
+  /// bytes get written where, with `biHeight` always positive, so this
+  /// switch is safe to flip either way. Default `false` (unreversed row
+  /// order) — the direction a real hardware test was pointing at right
+  /// before the old switch's crash cut that test short; still needs a
+  /// real print to confirm. See
+  /// [ArgoxRasterRendererOptions.reverseRowOrder].
+  bool _reverseRowOrder = false;
+
+  /// Whether the rasterized image needs to be mirrored left-right — only
+  /// used by [_PrintFormat.pplaRaster]. Confirmed on real hardware to be
+  /// the fix for a label printing mirrored left-to-right; default `true`
+  /// since that's the confirmed-correct setting for the hardware this was
+  /// tested against. See [ArgoxRasterRendererOptions.mirrorHorizontal].
+  bool _mirrorHorizontal = false;
+
+  /// Whether to send the rasterized image at the print head's full native
+  /// resolution (`D11`) instead of the 203 DPI default (`D22`, half the
+  /// linear resolution) — only used by [_PrintFormat.pplaRaster]. Doubles
+  /// real image detail, not just anti-aliasing; unconfirmed against real
+  /// hardware yet but not known to be dangerous — see
+  /// [ArgoxRasterRendererOptions.fullResolution].
+  bool _fullResolution = true;
+
   /// Whether the roll this document was designed for has more than one
   /// column — when it does, `_print` always tiles across columns via
   /// `LabelLayoutEngine.resolveBatch` instead of resolving a single label.
   bool get _hasColumns => widget.document.page.columns > 1;
+
+  /// Both PPLA formats (native commands or rasterized image) emit a raw
+  /// byte stream that gets concatenated across rows and sent via
+  /// [WindowsRawPrintTransport] — as opposed to PDF, which goes through
+  /// the Windows driver and sends one job per row instead.
+  bool get _isPplaFormat =>
+      _format == _PrintFormat.ppla || _format == _PrintFormat.pplaRaster;
 
   bool _batchMode = false;
   List<Map<String, dynamic>> _records = [const {}];
@@ -110,22 +161,24 @@ class _PrintDialogState extends State<PrintDialog> {
             : List.generate(_copies, (_) => _sampleData);
         final rows = layoutEngine.resolveBatch(widget.document, records);
 
-        if (_format == _PrintFormat.ppla) {
+        if (_isPplaFormat) {
           // One raw job for every row, not one job *per* row: sending N
           // separate spooler jobs back to back let the printer start
           // processing job N+1's commands before it had physically
           // finished feeding to the next row, so rows printed on top of
           // each other on real hardware. PPLA natively supports multiple
           // labels in a single continuous stream (repeated <STX>L...E
-          // blocks), which is what concatenating the rendered bytes does
-          // — the printer, not our software, then owns the feed timing
-          // between rows.
+          // blocks — or, in raster mode, repeated <STX>I/1Y blocks), which
+          // is what concatenating the rendered bytes does — the printer,
+          // not our software, then owns the feed timing between rows.
           final bytes = <int>[];
           for (final resolved in rows) {
-            bytes.addAll(await _renderPpla(resolved, copies: 1));
+            bytes.addAll(await _renderRawPpla(resolved, copies: 1));
           }
           final combined = Uint8List.fromList(bytes);
-          await _copyPplaToClipboard(combined);
+          if (_format == _PrintFormat.ppla) {
+            await _copyPplaToClipboard(combined);
+          }
           await const WindowsRawPrintTransport().send(
             combined,
             target: _selectedPrinter,
@@ -192,6 +245,29 @@ class _PrintDialogState extends State<PrintDialog> {
           bytes,
           target: _selectedPrinter,
         );
+      case _PrintFormat.pplaRaster:
+        final bytes = await _renderPplaRaster(resolved, copies: copies);
+        await const WindowsRawPrintTransport().send(
+          bytes,
+          target: _selectedPrinter,
+        );
+    }
+  }
+
+  /// Renders whichever PPLA format is selected — shared by the
+  /// multi-column row-concatenation path in [_print] so it doesn't need
+  /// to know which one it's dealing with.
+  Future<Uint8List> _renderRawPpla(
+    ResolvedDocument resolved, {
+    required int copies,
+  }) {
+    switch (_format) {
+      case _PrintFormat.ppla:
+        return _renderPpla(resolved, copies: copies);
+      case _PrintFormat.pplaRaster:
+        return _renderPplaRaster(resolved, copies: copies);
+      case _PrintFormat.pdf:
+        throw StateError('_renderRawPpla chamado para formato não-PPLA');
     }
   }
 
@@ -209,18 +285,39 @@ class _PrintDialogState extends State<PrintDialog> {
     required int copies,
   }) {
     const renderer = ArgoxRenderer();
+    return renderer.render(resolved, _argoxOptions(copies));
+  }
+
+  /// Same job-level settings as [_renderPpla] (darkness, copies, transfer
+  /// type, offsets) — only how the label's *content* reaches the printer
+  /// differs (rasterized image vs native commands). See
+  /// `label_renderer_argox_raster`'s README for what that trades off.
+  Future<Uint8List> _renderPplaRaster(
+    ResolvedDocument resolved, {
+    required int copies,
+  }) {
+    const renderer = ArgoxRasterRenderer();
     return renderer.render(
       resolved,
-      ArgoxRendererOptions(
-        darkness: _darkness,
-        copies: copies,
-        transferType: _transferType,
-        dialect: ArgoxDialect.ppla,
-        offsetXMm: _offsetXMm,
-        offsetYMm: _offsetYMm,
+      ArgoxRasterRendererOptions(
+        base: _argoxOptions(copies),
+        memoryBank: _memoryBank,
+        reverseRowOrder: _reverseRowOrder,
+        mirrorHorizontal: _mirrorHorizontal,
+        fullResolution: _fullResolution,
       ),
     );
   }
+
+  ArgoxRendererOptions _argoxOptions(int copies) => ArgoxRendererOptions(
+    darkness: _darkness,
+    copies: copies,
+    transferType: _transferType,
+    dialect: ArgoxDialect.ppla,
+    offsetXMm: _offsetXMm,
+    offsetYMm: _offsetYMm,
+    feedOffsetMm: _feedOffsetMm,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -289,6 +386,10 @@ class _PrintDialogState extends State<PrintDialog> {
                         DropdownMenuItem(
                           value: _PrintFormat.ppla,
                           child: Text('PPLA (comando direto, Argox)'),
+                        ),
+                        DropdownMenuItem(
+                          value: _PrintFormat.pplaRaster,
+                          child: Text('PPLA (imagem rasterizada, Argox)'),
                         ),
                       ],
                       onChanged: (format) =>
@@ -372,6 +473,7 @@ class _PrintDialogState extends State<PrintDialog> {
       case _PrintFormat.pdf:
         return [if (showCopies) _copiesField()];
       case _PrintFormat.ppla:
+      case _PrintFormat.pplaRaster:
         return [
           Text('Escurecimento (H${_darkness.toString().padLeft(2, '0')})'),
           Slider(
@@ -401,8 +503,81 @@ class _PrintDialogState extends State<PrintDialog> {
           ),
           const SizedBox(height: 12),
           _offsetFields(),
+          const SizedBox(height: 12),
+          _feedOffsetField(),
+          if (format == _PrintFormat.pplaRaster) ...[
+            const SizedBox(height: 12),
+            _rasterFields(),
+          ],
         ];
     }
+  }
+
+  /// Raster-mode-only calibration — see [_memoryBank]/[_reverseRowOrder]/
+  /// [_mirrorHorizontal]/[_fullResolution] and
+  /// `label_renderer_argox_raster`'s README for what each one is for and
+  /// what symptom points at it.
+  Widget _rasterFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          value: _memoryBank,
+          decoration: const InputDecoration(labelText: 'Banco de memória'),
+          items: const [
+            DropdownMenuItem(value: 'D', child: Text('D (padrão)')),
+            DropdownMenuItem(value: 'A', child: Text('A')),
+            DropdownMenuItem(value: 'C', child: Text('C')),
+          ],
+          onChanged: (value) =>
+              setState(() => _memoryBank = value ?? _memoryBank),
+        ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Linhas invertidas'),
+                subtitle: const Text(
+                  'Ligue se a etiqueta sair de cabeça pra baixo. Reescrito '
+                  'para nunca mais travar a impressora — seguro trocar '
+                  'quantas vezes precisar.',
+                ),
+                value: _reverseRowOrder,
+                onChanged: (value) => setState(() => _reverseRowOrder = value),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Espelhado horizontalmente'),
+                subtitle: const Text(
+                  'Confirmado em hardware real — deixe ligado. Desligue só '
+                  'se a etiqueta passar a sair espelhada da esquerda pra '
+                  'direita (como num espelho).',
+                ),
+                value: _mirrorHorizontal,
+                onChanged: (value) => setState(() => _mirrorHorizontal = value),
+              ),
+            ),
+          ],
+        ),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Resolução total da imagem (D11)'),
+          subtitle: const Text(
+            'Deixe ligado para mais nitidez — dobra os pontos endereçáveis '
+            'da imagem em vez de só D22 (padrão de fábrica a 203 DPI). '
+            'Ainda não confirmado em hardware real; desligue se a etiqueta '
+            'sair com tamanho ou distorção diferente do esperado.',
+          ),
+          value: _fullResolution,
+          onChanged: (value) => setState(() => _fullResolution = value),
+        ),
+      ],
+    );
   }
 
   /// Manual print-position calibration — compensates for this specific
@@ -443,6 +618,31 @@ class _PrintDialogState extends State<PrintDialog> {
           ),
         ),
       ],
+    );
+  }
+
+  /// How far the printer physically feeds per label cycle, added to the
+  /// `c` (label length) PPLA command — mirrors a printer driver's own
+  /// "sensor/top offset" media setting (see [_feedOffsetMm]). Distinct
+  /// from [_offsetFields], which shifts content position, not feed
+  /// distance.
+  Widget _feedOffsetField() {
+    return TextFormField(
+      initialValue: _feedOffsetMm.toString(),
+      decoration: const InputDecoration(
+        labelText: 'Avanço de papel',
+        suffixText: 'mm',
+        helperText:
+            'Quanto a impressora avança por etiqueta, além do '
+            'tamanho desenhado — mesmo ajuste do "Deslocamento superior" '
+            'nas Preferências de impressão da impressora.',
+      ),
+      keyboardType: const TextInputType.numberWithOptions(
+        signed: true,
+        decimal: true,
+      ),
+      onChanged: (value) =>
+          _feedOffsetMm = double.tryParse(value) ?? _feedOffsetMm,
     );
   }
 

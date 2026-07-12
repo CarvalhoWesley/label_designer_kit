@@ -12,4 +12,14 @@ void main() {
     expect(id, startsWith('el-'));
     expect(id.split('-'), hasLength(3));
   });
+
+  test('generateLayerId produces unique, "layer-"-prefixed ids', () {
+    final ids = {for (var i = 0; i < 1000; i++) generateLayerId()};
+    expect(ids, hasLength(1000));
+    expect(generateLayerId(), startsWith('layer-'));
+  });
+
+  test('generateId uses the given prefix', () {
+    expect(generateId('foo'), startsWith('foo-'));
+  });
 }

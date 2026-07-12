@@ -1,0 +1,36 @@
+name: label_renderer_argox_raster
+description: >
+  Rasteriza um ResolvedDocument inteiro via label_renderer_canvas (tipografia
+  real, código de barras, QR, formas preenchidas) e envia como imagem para
+  uma impressora Argox via o comando de download de imagem do PPLA, em vez
+  de comandos nativos por elemento — contorna as limitações de fonte/forma
+  do PPLA nativo (ver label_renderer_argox). Pacote de composição: depende
+  de label_renderer_argox e label_renderer_canvas, sem alterá-los.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.8.1
+  flutter: ">=3.32.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  label_core:
+    path: ../label_core
+  label_renderer:
+    path: ../label_renderer
+  label_renderer_argox:
+    path: ../label_renderer_argox
+  label_renderer_canvas:
+    path: ../label_renderer_canvas
+
+dev_dependencies:
+  test: ^1.24.0
+  # Dev-only: exercises the full LabelDocument -> ResolvedDocument -> PPLA
+  # raster pipeline in test/end_to_end_test.dart. Production code in lib/
+  # never imports label_layout_engine — a renderer only ever consumes an
+  # already-resolved ResolvedDocument.
+  label_layout_engine:
+    path: ../label_layout_engine
+  lints: ^5.0.0

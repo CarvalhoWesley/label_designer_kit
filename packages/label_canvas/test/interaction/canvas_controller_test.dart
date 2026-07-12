@@ -182,6 +182,38 @@ void main() {
     });
 
     test(
+      'snapEnabled aligns to another element\'s edge (smart guides) before '
+      'falling back to the grid',
+      () {
+        final h = _Harness([
+          _rect('a', position: const Point(x: 0, y: 0)),
+          _rect('b', position: const Point(x: 50, y: 0)),
+        ]);
+        // A grid this coarse would snap to (0,0) if grid snapping ran
+        // instead of alignment — a strong signal alignment actually took
+        // priority, not just a coincidental result.
+        h.viewportStore
+          ..setGridSize(1000)
+          ..toggleSnap();
+        h.controller.pointerDown(const Offset(5, 5));
+        // Raw delta (48,0) -> proposed left edge at x=48, 2mm short of
+        // b's left edge (50) — within the 6px/mm alignment threshold.
+        h.controller.pointerMove(const Offset(53, 5));
+
+        expect(
+          h.canvasStore.dragPreviewPositions['a'],
+          const Point(x: 50, y: 0),
+        );
+        expect(h.canvasStore.activeGuidesX, contains(50));
+
+        h.controller.pointerUp(const Offset(53, 5));
+        expect(h.element('a').position, const Point(x: 50, y: 0));
+        // Guides are cleared once the drag ends.
+        expect(h.canvasStore.hasActiveGuides, isFalse);
+      },
+    );
+
+    test(
       'dragging one of several selected elements moves all of them as one undo step',
       () {
         final h = _Harness([

@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 
 const _textStyle = ResolvedTextStyle(
   fontFamily: 'Roboto',
-  fontSizeDots: 34, // ~12pt at 203dpi -> ASD size code 'A12'
+  fontSizeDots: 34, // ~12pt at 203dpi -> ASD size code '004'
   bold: false,
   italic: false,
   underline: false,
@@ -107,6 +107,32 @@ void main() {
       expect(output, contains('D11\r'));
     });
 
+    test(
+      'labelFormatHeader honors dotMultiplierOverride instead of the '
+      "document's own DPI-based default",
+      () {
+        const document = ResolvedDocument(
+          widthDots: 200,
+          heightDots: 100,
+          dpi: 203, // would normally default to D22
+          elements: [],
+        );
+        const renderer = ArgoxRenderer();
+        final withOverride = renderer.labelFormatHeader(
+          document,
+          const ArgoxRendererOptions(),
+          dotMultiplierOverride: 1,
+        );
+        expect(withOverride, contains('D11\r'));
+
+        final withoutOverride = renderer.labelFormatHeader(
+          document,
+          const ArgoxRendererOptions(),
+        );
+        expect(withoutOverride, contains('D22\r'));
+      },
+    );
+
     test('encodes darkness and copies from ArgoxRendererOptions', () async {
       const document = ResolvedDocument(
         widthDots: 200,
@@ -182,7 +208,7 @@ void main() {
               fontType: '9',
               hScale: '1',
               vScale: '1',
-              fontSubtype: 'A12',
+              fontSubtype: '004',
               y: '0037',
               x: '0005',
               text: 'ABC',
@@ -218,7 +244,7 @@ void main() {
               fontType: '9',
               hScale: '1',
               vScale: '1',
-              fontSubtype: 'A12',
+              fontSubtype: '004',
               y: '0039',
               x: '0000',
               text: 'X',
@@ -247,6 +273,7 @@ void main() {
             symbology: BarcodeSymbology.code128,
             showText: true,
             moduleWidthDots: 2,
+            textSizeDots: 0,
           ),
         );
         final output = await _render(_documentWith(element, heightDots: 40));
@@ -289,6 +316,7 @@ void main() {
             symbology: BarcodeSymbology.code128,
             showText: false,
             moduleWidthDots: 2,
+            textSizeDots: 0,
           ),
         );
         final output = await _render(_documentWith(element, heightDots: 40));

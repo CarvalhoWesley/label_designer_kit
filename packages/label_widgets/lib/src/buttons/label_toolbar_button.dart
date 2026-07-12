@@ -10,7 +10,7 @@ class LabelToolbarButton extends StatelessWidget {
     required this.tooltip,
     this.onPressed,
     this.selected = false,
-    this.iconSize = 20,
+    this.iconSize = 18,
   });
 
   final IconData icon;

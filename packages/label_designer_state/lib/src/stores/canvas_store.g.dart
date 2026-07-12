@@ -263,6 +263,24 @@ mixin _$CanvasStore on CanvasStoreBase, Store {
     });
   }
 
+  late final _$actualSizeRequestAtom = Atom(
+    name: 'CanvasStoreBase.actualSizeRequest',
+    context: context,
+  );
+
+  @override
+  int get actualSizeRequest {
+    _$actualSizeRequestAtom.reportRead();
+    return super.actualSizeRequest;
+  }
+
+  @override
+  set actualSizeRequest(int value) {
+    _$actualSizeRequestAtom.reportWrite(value, super.actualSizeRequest, () {
+      super.actualSizeRequest = value;
+    });
+  }
+
   late final _$CanvasStoreBaseActionController = ActionController(
     name: 'CanvasStoreBase',
     context: context,
@@ -275,6 +293,18 @@ mixin _$CanvasStore on CanvasStoreBase, Store {
     );
     try {
       return super.requestFitToView();
+    } finally {
+      _$CanvasStoreBaseActionController.endAction(_$actionInfo);
+    }
+  }
+
+  @override
+  void requestActualSize() {
+    final _$actionInfo = _$CanvasStoreBaseActionController.startAction(
+      name: 'CanvasStoreBase.requestActualSize',
+    );
+    try {
+      return super.requestActualSize();
     } finally {
       _$CanvasStoreBaseActionController.endAction(_$actionInfo);
     }
@@ -498,6 +528,7 @@ rotationPreviewDegrees: ${rotationPreviewDegrees},
 marqueeStart: ${marqueeStart},
 marqueeEnd: ${marqueeEnd},
 fitToViewRequest: ${fitToViewRequest},
+actualSizeRequest: ${actualSizeRequest},
 hasActiveGuides: ${hasActiveGuides}
     ''';
   }

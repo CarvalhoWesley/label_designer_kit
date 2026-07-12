@@ -26,7 +26,37 @@ class ArgoxRenderer extends BaseRenderer {
   const ArgoxRenderer();
 
   @override
-  String header(ResolvedDocument document, RendererOptions options) {
+  String header(ResolvedDocument document, RendererOptions options) =>
+      clearMemoryCommand() + labelFormatHeader(document, options);
+
+  /// `<STX>qA` — clears the printer's RAM image buffer. Split out from
+  /// [header] so a raster-mode caller (`label_renderer_argox_raster`) can
+  /// send this, then its own `<STX>I` image-download command, then
+  /// [labelFormatHeader] — the image download is a system-level command
+  /// and must run before `<STX>L` enters label-formatting mode, but after
+  /// the memory clear (a clear issued afterward would wipe the just-sent
+  /// image). See the Class Series 2 Programmer's Manual, "System-Level
+  /// Command Functions" (`<STX>I`) vs. "Generating Label Formats".
+  String clearMemoryCommand() => '${_stx}qA$_cr';
+
+  /// Everything [header] sends after [clearMemoryCommand]: transfer type,
+  /// label length, enter-label-format, dot size, darkness. Public for the
+  /// same raster-mode reuse reason as [clearMemoryCommand].
+  ///
+  /// [dotMultiplierOverride] replaces [pplaDotMultiplier]'s DPI-based
+  /// default for just the `D` (dot size) command — a raster-only job has
+  /// no barcode module-width field (the one other place the multiplier
+  /// matters) to desync, so `label_renderer_argox_raster` uses this to
+  /// request `D11` (full print-head resolution) even on a 203 DPI head
+  /// that would otherwise default to `D22`, per the manual: "This command
+  /// is used to change the size of a printed dot, hence the print
+  /// resolution... D22 is the default value for all 203 DPI printer
+  /// models" — a *default*, not the only valid value.
+  String labelFormatHeader(
+    ResolvedDocument document,
+    RendererOptions options, {
+    int? dotMultiplierOverride,
+  }) {
     final argoxOptions = _optionsOf(options);
     if (argoxOptions.dialect == ArgoxDialect.pplb) {
       throw UnimplementedError(
@@ -40,19 +70,20 @@ class ArgoxRenderer extends BaseRenderer {
         ? '1'
         : '0';
     final lengthHundredthsOfInch = pplaDigits(
-      pplaHundredthsOfInch(document.heightDots, document.dpi),
+      pplaHundredthsOfInch(document.heightDots, document.dpi) +
+          pplaMmToHundredthsOfInch(argoxOptions.feedOffsetMm),
       4,
     );
+    final dotMultiplier =
+        dotMultiplierOverride ?? pplaDotMultiplier(document.dpi);
 
     return '$_stx'
-        'qA$_cr' // clear RAM memory
-        '$_stx'
         'KI7$transferType$_cr' // transfer type
         '$_stx'
         'c$lengthHundredthsOfInch$_cr' // label length
         '$_stx'
         'L$_cr' // enter label formatting mode
-        '${pplaDotSizeCommand(document.dpi)}$_cr' // dot size, per print head DPI
+        'D$dotMultiplier$dotMultiplier$_cr' // dot size, per print head DPI
         'H${pplaDigits(argoxOptions.darkness, 2)}$_cr'; // darkness/heat
   }
 

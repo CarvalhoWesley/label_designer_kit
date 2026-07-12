@@ -42,10 +42,10 @@ class LabelCanvas extends StatefulWidget {
   final bool showRulers;
   final double rulerThickness;
 
-  /// Whether to zoom/pan to fit the page on the first frame (see
-  /// `ViewportStore.fitToPage`). Widget tests that assert on hit-testing
-  /// at a specific zoom/pan set this to `false` to keep geometry
-  /// deterministic.
+  /// Whether to zoom/pan to actual size (100%) on the first frame (see
+  /// `ViewportStore.showActualSize`). Widget tests that assert on
+  /// hit-testing at a specific zoom/pan set this to `false` to keep
+  /// geometry deterministic.
   final bool fitToViewOnLoad;
 
   @override
@@ -56,6 +56,7 @@ class _LabelCanvasState extends State<LabelCanvas> {
   late final CanvasController _controller;
   late final ImageDecodeCache _imageCache;
   late final ReactionDisposer _fitToViewDisposer;
+  late final ReactionDisposer _actualSizeDisposer;
   Size? _viewportSize;
 
   @override
@@ -73,22 +74,30 @@ class _LabelCanvasState extends State<LabelCanvas> {
         if (mounted) setState(() {});
       },
     );
-    // Fits once on the first frame (there's no prior user zoom/pan to
-    // preserve yet) and again whenever the toolbar's "fit to view" button
-    // or a document swap bumps `fitToViewRequest` — see
-    // `CanvasStore.requestFitToView`'s doc comment.
+    // Whenever the toolbar's explicit "fit to view" button bumps
+    // `fitToViewRequest` — see `CanvasStore.requestFitToView`'s doc
+    // comment. Not used for the initial load; see `_actualSizeDisposer`.
     _fitToViewDisposer = reaction<int>(
       (_) => widget.canvasStore.fitToViewRequest,
       (_) => _fitToView(),
     );
+    // Shows the page at 100% (actual size) once on the first frame
+    // (there's no prior user zoom/pan to preserve yet) and again whenever
+    // a document swap bumps `actualSizeRequest` — see
+    // `CanvasStore.requestActualSize`'s doc comment.
+    _actualSizeDisposer = reaction<int>(
+      (_) => widget.canvasStore.actualSizeRequest,
+      (_) => _showActualSize(),
+    );
     if (widget.fitToViewOnLoad) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _fitToView());
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showActualSize());
     }
   }
 
   @override
   void dispose() {
     _fitToViewDisposer();
+    _actualSizeDisposer();
     _imageCache.dispose();
     super.dispose();
   }
@@ -98,6 +107,18 @@ class _LabelCanvasState extends State<LabelCanvas> {
     if (size == null || !mounted) return;
     final page = widget.documentStore.document.page;
     widget.viewportStore.fitToPage(
+      pageWidthMm: page.width,
+      pageHeightMm: page.height,
+      viewportWidthPx: size.width,
+      viewportHeightPx: size.height,
+    );
+  }
+
+  void _showActualSize() {
+    final size = _viewportSize;
+    if (size == null || !mounted) return;
+    final page = widget.documentStore.document.page;
+    widget.viewportStore.showActualSize(
       pageWidthMm: page.width,
       pageHeightMm: page.height,
       viewportWidthPx: size.width,

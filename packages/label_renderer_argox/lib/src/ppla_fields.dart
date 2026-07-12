@@ -64,7 +64,7 @@ const List<int> pplaAsdFontSizesPt300Plus = [
   72,
 ];
 
-/// Picks the ASD smooth font size code (`Ann`, e.g. `A12` for 12pt) whose
+/// Picks the ASD smooth font size code (`0nn`, e.g. `004` for 12pt) whose
 /// point size is closest to [fontSizeDots] converted to points at [dpi].
 ///
 /// PPLA has no arbitrary-size text — only a fixed ladder of ASD sizes (plus
@@ -75,27 +75,48 @@ const List<int> pplaAsdFontSizesPt300Plus = [
 /// This previously returned a hand-picked `000`-`006` numeric code for 7
 /// assumed sizes (4/6/8/10/12/14/16pt) — none of that matched Table C-6: the
 /// real `0nn` numeric codes only cover `001`-`010` (6pt-48pt), `000` is
-/// reserved for 300 DPI+ only, and there is no 16pt size at all. Sending an
-/// out-of-spec code like `000` to a 203 DPI printer made it fall back to a
-/// much larger default font — confirmed on real Argox hardware printing
-/// text far bigger than configured, even after the row/column unit fix. The
-/// `Ann` alpha form is used instead of the numeric form because it's valid
-/// at every DPI in the table, sidestepping the numeric code's DPI gating
-/// entirely.
+/// reserved for 300 DPI+ only (4pt), and there is no 16pt size at all.
+/// Sending an out-of-spec code like `000` to a 203 DPI printer made it fall
+/// back to a much larger default font — confirmed on real Argox hardware
+/// printing text far bigger than configured, even after the row/column unit
+/// fix. This was then switched to the `Ann` alpha form (`A12` for 12pt),
+/// which the manual documents as DPI-independent — but that alpha form
+/// turned out to not be recognized on at least one real Argox model (OS-214
+/// plus), reproducing the exact same "falls back to an oversized default
+/// font" symptom the `000`-`006` table caused. Back to the numeric form,
+/// this time with the table Table C-6 actually documents: index within
+/// [pplaAsdFontSizesPt]/[pplaAsdFontSizesPt300Plus] plus one at <300 DPI
+/// (`001`-`010`), or the bare index at >=300 DPI (`000`-`011`, since `000`
+/// covers the 300-DPI-only 4pt size there).
 String pplaAsdFontSubtype(int fontSizeDots, int dpi) {
   final pointSize = fontSizeDots * 72 / dpi;
   final sizes = dpi >= 300 ? pplaAsdFontSizesPt300Plus : pplaAsdFontSizesPt;
-  var closest = sizes[0];
-  var closestDiff = (pointSize - closest).abs();
+  var closestIndex = 0;
+  var closestDiff = (pointSize - sizes[0]).abs();
   for (var i = 1; i < sizes.length; i++) {
     final diff = (pointSize - sizes[i]).abs();
     if (diff < closestDiff) {
       closestDiff = diff;
-      closest = sizes[i];
+      closestIndex = i;
     }
   }
-  return 'A${closest.toString().padLeft(2, '0')}';
+  final code = dpi >= 300 ? closestIndex : closestIndex + 1;
+  return code.toString().padLeft(3, '0');
 }
+
+/// How many physical print-head dots each PPLA "addressable dot" covers —
+/// `2` (a 2x2 physical block per address) on 203 DPI heads, `1` (no
+/// doubling) on 300/400/600 DPI heads. Backs [pplaDotSizeCommand]'s `Dnn`
+/// command; also needed by `label_renderer_argox_raster` to size a
+/// rasterized image in *addressable* dots rather than physical dots — a
+/// native text/barcode/shape command's position and size are expressed in
+/// hundredths of an inch (an absolute physical unit, unaffected by this
+/// multiplier), but a downloaded image's pixels map 1:1 to addressable
+/// dots, so a raster image sized in physical (undoubled) dots ends up
+/// printing at this multiplier's factor too large — confirmed on real
+/// Argox hardware (a 40x60mm label rasterized at the nominal 320x480px
+/// printed at roughly double size on a 203 DPI head).
+int pplaDotMultiplier(int dpi) => dpi == 203 ? 2 : 1;
 
 /// PPLA's `D` command (dot width/height multiplier) — a per-model default
 /// documented in the Datamax Class Series 2 Programmer's Manual (PPLA's
@@ -107,7 +128,10 @@ String pplaAsdFontSubtype(int fontSizeDots, int dpi) {
 /// found after the first real-hardware print test came out uniformly
 /// oversized on a 203 DPI Argox printer (the renderer previously
 /// hardcoded `D11` regardless of DPI).
-String pplaDotSizeCommand(int dpi) => dpi == 203 ? 'D22' : 'D11';
+String pplaDotSizeCommand(int dpi) {
+  final m = pplaDotMultiplier(dpi);
+  return 'D$m$m';
+}
 
 /// Converts [dots] (at [dpi] dots/inch) to hundredths of an inch — the
 /// unit PPLA actually uses for every row/column position field and every

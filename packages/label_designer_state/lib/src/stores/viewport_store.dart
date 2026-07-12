@@ -14,11 +14,21 @@ part 'viewport_store.g.dart';
 class ViewportStore = ViewportStoreBase with _$ViewportStore;
 
 abstract class ViewportStoreBase with Store {
-  static const double minZoom = 0.1;
-  static const double maxZoom = 8;
+  /// Pixels per millimeter at "100%" (actual/real size) — the reference
+  /// most design tools use to approximate physical size on screen without
+  /// knowing the monitor's real DPI: a 96 DPI "reference pixel" (the same
+  /// assumption CSS uses), i.e. `96 / 25.4` px per mm.
+  ///
+  /// [zoom] itself stays a plain px/mm density (unrelated to any
+  /// percentage), so this is what converts between the two — see
+  /// [showActualSize] and the toolbar's zoom percentage display.
+  static const double pxPerMmAtActualSize = 96 / 25.4;
+
+  static const double minZoom = pxPerMmAtActualSize * 0.1;
+  static const double maxZoom = pxPerMmAtActualSize * 8;
 
   @observable
-  double zoom = 1;
+  double zoom = pxPerMmAtActualSize;
 
   @observable
   Point pan = const Point.zero();
@@ -49,15 +59,14 @@ abstract class ViewportStoreBase with Store {
 
   @action
   void resetView() {
-    zoom = 1;
+    zoom = pxPerMmAtActualSize;
     pan = const Point.zero();
   }
 
   /// Zooms and pans so the page (given its size in mm) is centered and
-  /// fills [viewportWidthPx]/[viewportHeightPx] with a 10% margin — called
-  /// when the canvas first lays out and whenever a different document is
-  /// loaded, so a small label doesn't appear tiny in a corner of a large
-  /// viewport at the default `zoom = 1` (1mm = 1px).
+  /// fills [viewportWidthPx]/[viewportHeightPx] with a 10% margin — the
+  /// toolbar's explicit "fit to view" action, not what runs automatically
+  /// when a document opens (see [showActualSize] for that).
   @action
   void fitToPage({
     required double pageWidthMm,
@@ -75,6 +84,32 @@ abstract class ViewportStoreBase with Store {
         0.9 *
         math.min(viewportWidthPx / pageWidthMm, viewportHeightPx / pageHeightMm);
     zoom = fitZoom.clamp(minZoom, maxZoom);
+    pan = Point(
+      x: (viewportWidthPx - pageWidthMm * zoom) / 2,
+      y: (viewportHeightPx - pageHeightMm * zoom) / 2,
+    );
+  }
+
+  /// Centers the page at [pxPerMmAtActualSize] ("100%", actual/real size)
+  /// — called when the canvas first lays out and whenever a different
+  /// document is loaded, so opening a label shows it at real-world size
+  /// (like BarTender/NiceLabel do) instead of an auto-computed "fit"
+  /// zoom that has no relationship to 100% and, for a small label on a
+  /// wide viewport, routinely lands near [maxZoom].
+  @action
+  void showActualSize({
+    required double pageWidthMm,
+    required double pageHeightMm,
+    required double viewportWidthPx,
+    required double viewportHeightPx,
+  }) {
+    if (pageWidthMm <= 0 ||
+        pageHeightMm <= 0 ||
+        viewportWidthPx <= 0 ||
+        viewportHeightPx <= 0) {
+      return;
+    }
+    zoom = pxPerMmAtActualSize;
     pan = Point(
       x: (viewportWidthPx - pageWidthMm * zoom) / 2,
       y: (viewportHeightPx - pageHeightMm * zoom) / 2,

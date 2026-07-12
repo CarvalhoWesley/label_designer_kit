@@ -24,6 +24,8 @@ dependencies:
     path: ../label_renderer
   label_renderer_argox:
     path: ../label_renderer_argox
+  label_renderer_argox_raster:
+    path: ../label_renderer_argox_raster
   label_renderer_canvas:
     path: ../label_renderer_canvas
   label_renderer_pdf:

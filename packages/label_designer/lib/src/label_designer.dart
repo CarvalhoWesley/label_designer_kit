@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:label_canvas/label_canvas.dart';
 import 'package:label_core/label_core.dart' hide EdgeInsets;
 import 'package:label_designer_state/label_designer_state.dart';
+import 'package:label_widgets/label_widgets.dart';
 
 import 'logic/clone_element.dart';
 import 'logic/element_factory.dart';
@@ -78,6 +79,14 @@ class _LabelDesignerState extends State<LabelDesigner> {
   String? _activeLayerId;
   RightPanelTab _rightTab = RightPanelTab.properties;
 
+  // Sidebar width/collapse state — session UI state, not part of the
+  // `LabelDocument` (same category as `ViewportStore`'s zoom/pan: not
+  // undo-able, reset on every fresh `LabelDesigner`). See `ResizablePanel`.
+  double _layersPanelWidth = 240;
+  bool _layersPanelCollapsed = false;
+  double _rightPanelWidth = 320;
+  bool _rightPanelCollapsed = false;
+
   @override
   void initState() {
     super.initState();
@@ -103,7 +112,7 @@ class _LabelDesignerState extends State<LabelDesigner> {
     if (oldWidget.document != widget.document) {
       historyStore.loadDocument(widget.document);
       selectionStore.clear();
-      canvasStore.requestFitToView();
+      canvasStore.requestActualSize();
       setState(() {
         _activeLayerId = widget.document.layers.isEmpty
             ? null
@@ -111,6 +120,16 @@ class _LabelDesignerState extends State<LabelDesigner> {
       });
     }
   }
+
+  // Delete/Backspace also drive text-field editing (e.g. the property
+  // panel's name field). The framework's own text-editing action for
+  // those keys runs independently of this Shortcuts/Actions binding, so
+  // simply *not* deleting the canvas selection here is enough to avoid
+  // double-handling — no need (and, empirically, actively harmful — it
+  // also blocked normal in-field editing) to intercept the key at the
+  // field itself.
+  bool _isTextFieldFocused() =>
+      FocusManager.instance.primaryFocus?.context?.widget is EditableText;
 
   String? _resolveLayerId() =>
       _activeLayerId ??
@@ -253,7 +272,8 @@ class _LabelDesignerState extends State<LabelDesigner> {
             onInvoke: (_) => historyStore.canRedo ? historyStore.redo() : null,
           ),
           _DeleteIntent: CallbackAction<_DeleteIntent>(
-            onInvoke: (_) => _deleteSelection(),
+            onInvoke: (_) =>
+                _isTextFieldFocused() ? null : _deleteSelection(),
           ),
           _DuplicateIntent: CallbackAction<_DuplicateIntent>(
             onInvoke: (_) => _duplicateSelection(),
@@ -299,13 +319,25 @@ class _LabelDesignerState extends State<LabelDesigner> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    SizedBox(
-                      width: 200,
-                      child: LayersPanel(
-                        layerStore: layerStore,
-                        activeLayerId: _activeLayerId,
-                        onActiveLayerChanged: (id) =>
-                            setState(() => _activeLayerId = id),
+                    ResizablePanel(
+                      width: _layersPanelWidth,
+                      onWidthChanged: (value) =>
+                          setState(() => _layersPanelWidth = value),
+                      minWidth: 200,
+                      maxWidth: 400,
+                      collapsed: _layersPanelCollapsed,
+                      onCollapsedChanged: (value) =>
+                          setState(() => _layersPanelCollapsed = value),
+                      child: ColoredBox(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerLow,
+                        child: LayersPanel(
+                          layerStore: layerStore,
+                          activeLayerId: _activeLayerId,
+                          onActiveLayerChanged: (id) =>
+                              setState(() => _activeLayerId = id),
+                        ),
                       ),
                     ),
                     const VerticalDivider(width: 1),
@@ -319,14 +351,28 @@ class _LabelDesignerState extends State<LabelDesigner> {
                       ),
                     ),
                     const VerticalDivider(width: 1),
-                    SizedBox(
-                      width: 320,
-                      child: RightPanel(
-                        tab: _rightTab,
-                        onTabChanged: (tab) => setState(() => _rightTab = tab),
-                        documentStore: documentStore,
-                        selectionStore: selectionStore,
-                        propertyStore: propertyStore,
+                    ResizablePanel(
+                      width: _rightPanelWidth,
+                      onWidthChanged: (value) =>
+                          setState(() => _rightPanelWidth = value),
+                      minWidth: 240,
+                      maxWidth: 480,
+                      collapsed: _rightPanelCollapsed,
+                      onCollapsedChanged: (value) =>
+                          setState(() => _rightPanelCollapsed = value),
+                      resizeHandleOnLeft: true,
+                      child: ColoredBox(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerLow,
+                        child: RightPanel(
+                          tab: _rightTab,
+                          onTabChanged: (tab) =>
+                              setState(() => _rightTab = tab),
+                          documentStore: documentStore,
+                          selectionStore: selectionStore,
+                          propertyStore: propertyStore,
+                        ),
                       ),
                     ),
                   ],

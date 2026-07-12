@@ -11,9 +11,16 @@ import 'library_repository.dart';
 /// duplicate/delete/export/print — see `docs/ARCHITECTURE.md` section 20
 /// for why none of this lives in `label_designer` itself.
 class LibraryScreen extends StatefulWidget {
-  const LibraryScreen({super.key, required this.repository});
+  const LibraryScreen({
+    super.key,
+    required this.repository,
+    required this.themeMode,
+    required this.onToggleThemeMode,
+  });
 
   final LibraryRepository repository;
+  final ThemeMode themeMode;
+  final VoidCallback onToggleThemeMode;
 
   @override
   State<LibraryScreen> createState() => _LibraryScreenState();
@@ -81,7 +88,26 @@ class _LibraryScreenState extends State<LibraryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Minhas etiquetas')),
+      appBar: AppBar(
+        title: const Text('Minhas etiquetas'),
+        actions: [
+          IconButton(
+            tooltip: switch (widget.themeMode) {
+              ThemeMode.system => 'Tema: automático (do sistema)',
+              ThemeMode.light => 'Tema: claro',
+              ThemeMode.dark => 'Tema: escuro',
+            },
+            icon: Icon(
+              switch (widget.themeMode) {
+                ThemeMode.system => Icons.brightness_auto_outlined,
+                ThemeMode.light => Icons.light_mode_outlined,
+                ThemeMode.dark => Icons.dark_mode_outlined,
+              },
+            ),
+            onPressed: widget.onToggleThemeMode,
+          ),
+        ],
+      ),
       body: FutureBuilder<List<LibraryEntry>>(
         future: _entriesFuture,
         builder: (context, snapshot) {

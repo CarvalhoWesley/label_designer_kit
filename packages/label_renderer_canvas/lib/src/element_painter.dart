@@ -107,7 +107,17 @@ class ElementPainter {
       return;
     }
 
-    final textHeight = payload.showText ? box.height * 0.2 : 0.0;
+    // A custom textSizeDots reserves exactly that much line-height (times
+    // 1.25 for descenders/leading) instead of the auto-derived 20% of the
+    // box; 0 (the default) keeps the original box.height-relative sizing —
+    // see BarcodeElement.textSize.
+    final customFontSize = payload.textSizeDots > 0
+        ? payload.textSizeDots.toDouble()
+        : null;
+    final textHeight = payload.showText
+        ? (customFontSize != null ? customFontSize * 1.25 : box.height * 0.2)
+        : 0.0;
+    final fontSize = customFontSize ?? (textHeight * 0.8);
     final barsHeight = box.height - textHeight;
     final paint = Paint()..color = _ink;
     for (final module in symbol.modules) {
@@ -126,7 +136,7 @@ class ElementPainter {
       final textPainter = TextPainter(
         text: TextSpan(
           text: payload.data,
-          style: TextStyle(fontSize: textHeight * 0.8, color: _ink),
+          style: TextStyle(fontSize: fontSize, color: _ink),
         ),
         textAlign: TextAlign.center,
         textDirection: TextDirection.ltr,
