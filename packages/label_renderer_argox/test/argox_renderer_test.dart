@@ -107,6 +107,32 @@ void main() {
       expect(output, contains('D11\r'));
     });
 
+    test(
+      'labelFormatHeader honors dotMultiplierOverride instead of the '
+      "document's own DPI-based default",
+      () {
+        const document = ResolvedDocument(
+          widthDots: 200,
+          heightDots: 100,
+          dpi: 203, // would normally default to D22
+          elements: [],
+        );
+        const renderer = ArgoxRenderer();
+        final withOverride = renderer.labelFormatHeader(
+          document,
+          const ArgoxRendererOptions(),
+          dotMultiplierOverride: 1,
+        );
+        expect(withOverride, contains('D11\r'));
+
+        final withoutOverride = renderer.labelFormatHeader(
+          document,
+          const ArgoxRendererOptions(),
+        );
+        expect(withoutOverride, contains('D22\r'));
+      },
+    );
+
     test('encodes darkness and copies from ArgoxRendererOptions', () async {
       const document = ResolvedDocument(
         widthDots: 200,

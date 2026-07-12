@@ -104,6 +104,20 @@ String pplaAsdFontSubtype(int fontSizeDots, int dpi) {
   return code.toString().padLeft(3, '0');
 }
 
+/// How many physical print-head dots each PPLA "addressable dot" covers —
+/// `2` (a 2x2 physical block per address) on 203 DPI heads, `1` (no
+/// doubling) on 300/400/600 DPI heads. Backs [pplaDotSizeCommand]'s `Dnn`
+/// command; also needed by `label_renderer_argox_raster` to size a
+/// rasterized image in *addressable* dots rather than physical dots — a
+/// native text/barcode/shape command's position and size are expressed in
+/// hundredths of an inch (an absolute physical unit, unaffected by this
+/// multiplier), but a downloaded image's pixels map 1:1 to addressable
+/// dots, so a raster image sized in physical (undoubled) dots ends up
+/// printing at this multiplier's factor too large — confirmed on real
+/// Argox hardware (a 40x60mm label rasterized at the nominal 320x480px
+/// printed at roughly double size on a 203 DPI head).
+int pplaDotMultiplier(int dpi) => dpi == 203 ? 2 : 1;
+
 /// PPLA's `D` command (dot width/height multiplier) — a per-model default
 /// documented in the Datamax Class Series 2 Programmer's Manual (PPLA's
 /// base language, per `docs/ROADMAP.md` etapa 16): `D11` (1x1, no
@@ -114,7 +128,10 @@ String pplaAsdFontSubtype(int fontSizeDots, int dpi) {
 /// found after the first real-hardware print test came out uniformly
 /// oversized on a 203 DPI Argox printer (the renderer previously
 /// hardcoded `D11` regardless of DPI).
-String pplaDotSizeCommand(int dpi) => dpi == 203 ? 'D22' : 'D11';
+String pplaDotSizeCommand(int dpi) {
+  final m = pplaDotMultiplier(dpi);
+  return 'D$m$m';
+}
 
 /// Converts [dots] (at [dpi] dots/inch) to hundredths of an inch — the
 /// unit PPLA actually uses for every row/column position field and every

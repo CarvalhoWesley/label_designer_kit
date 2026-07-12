@@ -27,6 +27,27 @@ class CanvasRenderer implements LabelRenderer {
     ResolvedDocument document,
     RendererOptions options,
   ) async {
+    final image = await renderToImage(document, options);
+    try {
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) {
+        throw StateError('Falha ao codificar o PNG do ResolvedDocument.');
+      }
+      return byteData.buffer.asUint8List();
+    } finally {
+      image.dispose();
+    }
+  }
+
+  /// Same painting pipeline as [render], stopping before PNG encoding —
+  /// for a caller that needs raw pixels (e.g. `label_renderer_argox_raster`
+  /// thresholding to a monochrome bitmap) and would otherwise pay for a
+  /// pointless PNG encode/decode round trip. Caller must `dispose()` the
+  /// returned image.
+  Future<ui.Image> renderToImage(
+    ResolvedDocument document,
+    RendererOptions options,
+  ) async {
     final canvasOptions = options is CanvasRendererOptions
         ? options
         : const CanvasRendererOptions();
@@ -56,16 +77,7 @@ class CanvasRenderer implements LabelRenderer {
 
     final picture = recorder.endRecording();
     try {
-      final image = await picture.toImage(widthPx, heightPx);
-      try {
-        final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-        if (byteData == null) {
-          throw StateError('Falha ao codificar o PNG do ResolvedDocument.');
-        }
-        return byteData.buffer.asUint8List();
-      } finally {
-        image.dispose();
-      }
+      return await picture.toImage(widthPx, heightPx);
     } finally {
       picture.dispose();
     }

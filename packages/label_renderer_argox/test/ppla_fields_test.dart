@@ -98,6 +98,18 @@ void main() {
     });
   });
 
+  group('pplaDotMultiplier', () {
+    test('is 2 for 203 DPI print heads', () {
+      expect(pplaDotMultiplier(203), 2);
+    });
+
+    test('is 1 for 300/400/600 DPI print heads', () {
+      expect(pplaDotMultiplier(300), 1);
+      expect(pplaDotMultiplier(400), 1);
+      expect(pplaDotMultiplier(600), 1);
+    });
+  });
+
   group('pplaDotSizeCommand', () {
     test('is D22 for 203 DPI print heads', () {
       expect(pplaDotSizeCommand(203), 'D22');

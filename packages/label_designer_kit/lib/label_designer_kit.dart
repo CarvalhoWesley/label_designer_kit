@@ -13,6 +13,10 @@
 ///   renderer de impressora próprio).
 /// - `label_renderer_pdf`, `label_renderer_canvas`, `label_renderer_argox`:
 ///   os backends de saída prontos (PDF, PNG, PPLA).
+/// - `label_renderer_argox_raster`: variante do backend PPLA que rasteriza
+///   a etiqueta inteira (via `label_renderer_canvas`) em vez de comandos
+///   nativos por elemento — contorna os limites de fonte/forma do PPLA
+///   nativo ao custo de um job maior; ver o README do pacote.
 /// - `label_serialization`: `LabelDocumentCodec` para persistir `.label`.
 ///
 /// Pacotes internos de composição (`label_canvas`, `label_designer_state`,
@@ -40,6 +44,7 @@ export 'package:label_designer/label_designer.dart';
 export 'package:label_layout_engine/label_layout_engine.dart';
 export 'package:label_renderer/label_renderer.dart';
 export 'package:label_renderer_argox/label_renderer_argox.dart';
+export 'package:label_renderer_argox_raster/label_renderer_argox_raster.dart';
 // `ImageResolver`/`defaultImageResolver` are intentionally duplicated,
 // identical typedefs in label_renderer_canvas and label_renderer_pdf —
 // renderer packages are siblings and must not depend on each other (see
