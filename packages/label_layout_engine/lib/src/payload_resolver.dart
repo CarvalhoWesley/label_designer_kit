@@ -75,6 +75,7 @@ class PayloadResolver implements LabelElementVisitor<ResolvedPayload?> {
       symbology: element.symbology,
       showText: element.showText,
       moduleWidthDots: dpi.mmToDots(element.moduleWidth),
+      textSizeDots: dpi.mmToDots(element.textSize),
     );
   }
 

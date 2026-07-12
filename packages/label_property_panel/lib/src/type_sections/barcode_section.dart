@@ -76,6 +76,15 @@ class BarcodeSection extends StatelessWidget {
             (e) => (e as BarcodeElement).copyWith(moduleWidth: value),
           ),
         ),
+        LabeledNumberField(
+          label: 'Tamanho do texto (0 = automático)',
+          value: element.textSize,
+          min: 0,
+          suffixText: 'mm',
+          onChanged: (value) => onChange(
+            (e) => (e as BarcodeElement).copyWith(textSize: value),
+          ),
+        ),
       ],
     );
   }

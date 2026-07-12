@@ -32,6 +32,7 @@ void main() {
         symbology: BarcodeSymbology.code128,
         showText: true,
         moduleWidthDots: 3,
+        textSizeDots: 0,
       );
       expect(payload.symbology, BarcodeSymbology.code128);
       expect(payload.moduleWidthDots, 3);

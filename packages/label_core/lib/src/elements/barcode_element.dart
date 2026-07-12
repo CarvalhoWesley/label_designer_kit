@@ -24,6 +24,7 @@ class BarcodeElement extends LabelElement {
     required this.symbology,
     this.showText = true,
     this.moduleWidth = 0.33,
+    this.textSize = 0,
   });
 
   /// Raw content or `{{ expression }}`, resolved by the Layout Engine.
@@ -35,6 +36,14 @@ class BarcodeElement extends LabelElement {
 
   /// Width of the narrowest bar, in millimeters.
   final double moduleWidth;
+
+  /// Font size of the human-readable value, in millimeters. `0` (the
+  /// default) means auto-derived from the element's own box height instead
+  /// of a fixed size — see `CanvasRenderer`'s `_paintBarcode`. Same
+  /// zero-means-default convention PPLA itself uses for barcode fields
+  /// (Datamax manual: "Placing 0 ... in the symbol height field will
+  /// result in the default bar code height").
+  final double textSize;
 
   @override
   String get typeName => 'barcode';
@@ -58,6 +67,7 @@ class BarcodeElement extends LabelElement {
     BarcodeSymbology? symbology,
     bool? showText,
     double? moduleWidth,
+    double? textSize,
   }) {
     return BarcodeElement(
       id: id ?? this.id,
@@ -75,6 +85,7 @@ class BarcodeElement extends LabelElement {
       symbology: symbology ?? this.symbology,
       showText: showText ?? this.showText,
       moduleWidth: moduleWidth ?? this.moduleWidth,
+      textSize: textSize ?? this.textSize,
     );
   }
 
@@ -85,6 +96,7 @@ class BarcodeElement extends LabelElement {
     'symbology': symbology.name,
     'showText': showText,
     'moduleWidth': moduleWidth,
+    'textSize': textSize,
   };
 
   static BarcodeElement fromJson(Map<String, dynamic> json) {
@@ -108,6 +120,7 @@ class BarcodeElement extends LabelElement {
       symbology: BarcodeSymbology.values.byName(json['symbology'] as String),
       showText: json['showText'] as bool? ?? true,
       moduleWidth: (json['moduleWidth'] as num?)?.toDouble() ?? 0.33,
+      textSize: (json['textSize'] as num?)?.toDouble() ?? 0,
     );
   }
 
@@ -118,5 +131,6 @@ class BarcodeElement extends LabelElement {
     symbology,
     showText,
     moduleWidth,
+    textSize,
   ];
 }

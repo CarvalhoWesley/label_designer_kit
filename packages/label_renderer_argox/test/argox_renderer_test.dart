@@ -273,6 +273,7 @@ void main() {
             symbology: BarcodeSymbology.code128,
             showText: true,
             moduleWidthDots: 2,
+            textSizeDots: 0,
           ),
         );
         final output = await _render(_documentWith(element, heightDots: 40));
@@ -315,6 +316,7 @@ void main() {
             symbology: BarcodeSymbology.code128,
             showText: false,
             moduleWidthDots: 2,
+            textSizeDots: 0,
           ),
         );
         final output = await _render(_documentWith(element, heightDots: 40));
