@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart' hide EdgeInsets;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:label_designer_kit/label_designer_kit.dart';
+import 'package:flutter_label_designer/flutter_label_designer.dart';
 
 /// Proves the umbrella barrel alone — no other package import — is
 /// enough to embed [LabelDesigner] and run the full

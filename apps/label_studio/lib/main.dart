@@ -8,7 +8,7 @@ void main() => runApp(const LabelStudioApp());
 /// Configura, gera, salva e imprime etiquetas para uso por aplicações
 /// externas — ver `docs/ARCHITECTURE.md` seção 20 e `docs/INTEGRATION.md`.
 /// Único ponto de composição de negócio deste app; tudo que edita/renderiza
-/// etiquetas vem de `label_designer_kit`.
+/// etiquetas vem de `flutter_label_designer`.
 class LabelStudioApp extends StatefulWidget {
   const LabelStudioApp({super.key});
 

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:label_designer_kit/label_designer_kit.dart' hide EdgeInsets;
+import 'package:flutter_label_designer/flutter_label_designer.dart' hide EdgeInsets;
 import 'package:label_studio/src/library/library_repository.dart';
 
 void main() {

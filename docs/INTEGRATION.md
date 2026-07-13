@@ -4,25 +4,25 @@
 
 Este workspace não produz um app entregável — ele produz **pacotes Dart/Flutter** que o seu projeto Flutter já existente importa como qualquer outra dependência. Este guia é o passo a passo para isso.
 
-**Status desta etapa**: os passos abaixo foram validados rodando o pipeline completo dentro de `apps/playground` (sandbox interno deste workspace — ver seu README), que hoje consome os pacotes exatamente do mesmo jeito descrito aqui (via `label_designer_kit`). A validação num projeto Flutter *fora* deste workspace, consumindo via `path:`/`git:` como um cliente real faria, ainda não foi feita — é uma pendência manual para antes de considerar a integração "pronta para produção".
+**Status desta etapa**: os passos abaixo foram validados rodando o pipeline completo dentro de `apps/playground` (sandbox interno deste workspace — ver seu README), que hoje consome os pacotes exatamente do mesmo jeito descrito aqui (via `flutter_label_designer`). A validação num projeto Flutter *fora* deste workspace, consumindo via `path:`/`git:` como um cliente real faria, ainda não foi feita — é uma pendência manual para antes de considerar a integração "pronta para produção".
 
 ## 1. Adicionar os pacotes ao seu `pubspec.yaml`
 
-### Opção recomendada: `label_designer_kit`
+### Opção recomendada: `flutter_label_designer`
 
-`label_designer_kit` é um pacote guarda-chuva que reexporta tudo que um consumidor típico precisa (editor, layout engine, serialização e os renderers prontos) atrás de **uma única dependência** — ver [`packages/label_designer_kit/README.md`](../packages/label_designer_kit/README.md) para o que exatamente está incluído.
+`flutter_label_designer` é um pacote guarda-chuva que reexporta tudo que um consumidor típico precisa (editor, layout engine, serialização e os renderers prontos) atrás de **uma única dependência** — ver [`packages/flutter_label_designer/README.md`](../packages/flutter_label_designer/README.md) para o que exatamente está incluído.
 
 ```yaml
 # pubspec.yaml do seu projeto Flutter
 dependencies:
   flutter:
     sdk: flutter
-  label_designer_kit:
-    path: ../label_designer_workspace/packages/label_designer_kit
+  flutter_label_designer:
+    path: ../label_designer_workspace/packages/flutter_label_designer
 ```
 
 ```dart
-import 'package:label_designer_kit/label_designer_kit.dart';
+import 'package:flutter_label_designer/flutter_label_designer.dart';
 ```
 
 Isso já dá acesso a `LabelDesigner`, `LabelDocument`, `LabelLayoutEngine`, `PdfRenderer`, `CanvasRenderer`, `ArgoxRenderer` e `LabelDocumentCodec` — o resto deste guia usa esse único import.
@@ -46,14 +46,14 @@ dependencies:
 
 ### Em produção
 
-Depois de publicado (pub.dev ou um repositório git seu), troque `path:` por `git:` (ou pela versão do pub.dev) — vale para `label_designer_kit` ou para qualquer pacote individual:
+Depois de publicado (pub.dev ou um repositório git seu), troque `path:` por `git:` (ou pela versão do pub.dev) — vale para `flutter_label_designer` ou para qualquer pacote individual:
 
 ```yaml
 dependencies:
-  label_designer_kit:
+  flutter_label_designer:
     git:
       url: https://github.com/sua-empresa/label_designer_workspace.git
-      path: packages/label_designer_kit
+      path: packages/flutter_label_designer
       ref: v0.1.0 # tag/branch/commit — fixe uma versão
 ```
 
@@ -65,7 +65,7 @@ Rode `flutter pub get` depois de editar.
 
 ```dart
 import 'package:flutter/material.dart' hide EdgeInsets; // ver "armadilha conhecida" abaixo
-import 'package:label_designer_kit/label_designer_kit.dart';
+import 'package:flutter_label_designer/flutter_label_designer.dart';
 
 class MinhaTelaDeEdicao extends StatelessWidget {
   const MinhaTelaDeEdicao({super.key, required this.documento});
@@ -94,7 +94,7 @@ class MinhaTelaDeEdicao extends StatelessWidget {
 `LabelDocument` não sabe nada sobre impressoras ou pixels — o `LabelLayoutEngine` resolve variáveis/expressões/unidades para o DPI alvo, e um `label_renderer_*` converte o layout resolvido para bytes de saída. Nenhum renderer recalcula layout; todos recebem o mesmo `ResolvedDocument`.
 
 ```dart
-import 'package:label_designer_kit/label_designer_kit.dart';
+import 'package:flutter_label_designer/flutter_label_designer.dart';
 
 const layoutEngine = LabelLayoutEngine();
 final resolved = layoutEngine.resolve(documento, {
@@ -127,8 +127,8 @@ Este framework entrega bytes já codificados na linguagem de destino — **o tra
 | Validado | Como |
 |---|---|
 | `LabelDesigner` produz um `LabelDocument` editável de ponta a ponta | `apps/playground`, etapas 14 e 17 |
-| `LabelDocument` → `LabelLayoutEngine` → `PdfRenderer`/`CanvasRenderer`/`ArgoxRenderer` → bytes, sem exceções, usando só o import de `label_designer_kit` | `apps/playground` (etapa 17) e `packages/label_designer_kit/test/` |
-| `label_designer_kit` sozinho (sem nenhum outro import de pacote) é suficiente para tudo isso | `packages/label_designer_kit/test/label_designer_kit_test.dart` |
+| `LabelDocument` → `LabelLayoutEngine` → `PdfRenderer`/`CanvasRenderer`/`ArgoxRenderer` → bytes, sem exceções, usando só o import de `flutter_label_designer` | `apps/playground` (etapa 17) e `packages/flutter_label_designer/test/` |
+| `flutter_label_designer` sozinho (sem nenhum outro import de pacote) é suficiente para tudo isso | `packages/flutter_label_designer/test/flutter_label_designer_test.dart` |
 | Os pacotes resolvem corretamente via `path:` dentro deste monorepo (`melos bootstrap`) | Todas as etapas |
 | **Pendente**: os pacotes funcionam quando consumidos via `path:`/`git:` a partir de um `pubspec.yaml` genuinamente fora deste workspace (fora do gerenciamento do melos) | Não feito ainda — recomendado antes de depender disso em produção |
 | **Pendente**: bytes PPLA validados contra uma impressora Argox real | Ver `packages/label_renderer_argox/README.md` |

@@ -120,7 +120,7 @@ label_designer_workspace/            # monorepo (melos)
 │   ├── label_property_panel/        # painel de propriedades
 │   ├── label_preview/               # widget de preview (usa layout+canvas renderer)
 │   ├── label_designer/              # composição do editor completo
-│   ├── label_designer_kit/          # guarda-chuva: reexporta a API pública numa única dependência
+│   ├── flutter_label_designer/      # guarda-chuva: reexporta a API pública numa única dependência
 │   ├── label_print_transport/       # interface PrintTransport/PrinterDiscovery
 │   └── label_print_transport_windows/ # backend Windows (spooler/USB) de label_print_transport
 └── apps/
@@ -129,7 +129,7 @@ label_designer_workspace/            # monorepo (melos)
 
 > Não há `designer_desktop`/`designer_web` neste workspace. O projeto Flutter existente do usuário é o "app" que consome os pacotes acima via `pubspec.yaml`.
 
-> **Adição pós-etapa 17**: `label_designer_kit` não estava na lista original de packages — foi adicionado depois que o guia de integração (etapa 17) deixou claro que exigir 6-8 dependências `path:`/`git:` separadas do projeto consumidor era um atrito real. Ele só reexporta símbolos de pacotes já existentes (não contém lógica própria além do barrel file) e não muda nenhuma regra de dependência interna deste diagrama — ver seção 20 e `docs/INTEGRATION.md`.
+> **Adição pós-etapa 17**: `flutter_label_designer` não estava na lista original de packages — foi adicionado depois que o guia de integração (etapa 17) deixou claro que exigir 6-8 dependências `path:`/`git:` separadas do projeto consumidor era um atrito real. Ele só reexporta símbolos de pacotes já existentes (não contém lógica própria além do barrel file) e não muda nenhuma regra de dependência interna deste diagrama — ver seção 20 e `docs/INTEGRATION.md`.
 
 ## 5. Diagrama de packages
 
@@ -722,13 +722,13 @@ sequenceDiagram
 
 ## 20. Integração no projeto existente do usuário
 
-Não há app entregável neste workspace — a integração acontece inteiramente via `pubspec.yaml` do projeto consumidor. Forma recomendada: uma única dependência em `label_designer_kit`, que reexporta tudo que o consumidor típico precisa (path dependency durante o desenvolvimento; git ou pub.dev depois de publicado):
+Não há app entregável neste workspace — a integração acontece inteiramente via `pubspec.yaml` do projeto consumidor. Forma recomendada: uma única dependência em `flutter_label_designer`, que reexporta tudo que o consumidor típico precisa (path dependency durante o desenvolvimento; git ou pub.dev depois de publicado):
 
 ```yaml
 # pubspec.yaml do projeto do usuário
 dependencies:
-  label_designer_kit:
-    path: ../label_designer_workspace/packages/label_designer_kit
+  flutter_label_designer:
+    path: ../label_designer_workspace/packages/flutter_label_designer
 ```
 
 Quem quiser controle fino (por exemplo, um serviço headless que só precisa de um renderer, sem o editor visual) pode continuar declarando os pacotes individuais em vez do guarda-chuva:
@@ -743,7 +743,7 @@ dependencies:
 ```
 
 `label_print_transport` (e seus backends, ex. `label_print_transport_windows`) seguem a
-mesma regra do controle fino: **nunca** entram em `label_designer_kit` — diferente de um
+mesma regra do controle fino: **nunca** entram em `flutter_label_designer` — diferente de um
 `label_renderer_*` (saída pura Dart), transporte é o passo que efetivamente fala com o
 sistema operacional/hardware, então só o app que realmente imprime declara essas
 dependências:

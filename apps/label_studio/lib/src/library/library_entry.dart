@@ -1,4 +1,4 @@
-import 'package:label_designer_kit/label_designer_kit.dart' hide EdgeInsets;
+import 'package:flutter_label_designer/flutter_label_designer.dart' hide EdgeInsets;
 
 /// One saved template in the local library: a decoded [LabelDocument] paired
 /// with the `.label` file it was read from. [id] is the file's basename

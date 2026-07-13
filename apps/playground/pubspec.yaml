@@ -3,7 +3,7 @@ description: >
   Sandbox interno para validar o pipeline completo (LabelDesigner +
   label_serialization + label_layout_engine + label_renderer_pdf +
   label_renderer_argox) manualmente durante o desenvolvimento, consumindo
-  tudo via label_designer_kit — a mesma única dependência que um projeto
+  tudo via flutter_label_designer — a mesma única dependência que um projeto
   externo usaria (ver docs/INTEGRATION.md). Não é um entregável — o
   projeto do usuário nunca importa este pacote. Ver docs/ARCHITECTURE.md,
   seção 4, e docs/ROADMAP.md, etapa 17.
@@ -17,8 +17,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  label_designer_kit:
-    path: ../../packages/label_designer_kit
+  flutter_label_designer:
+    path: ../../packages/flutter_label_designer
   file_picker: ^8.1.0
 
 dev_dependencies:

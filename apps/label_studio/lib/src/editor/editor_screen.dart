@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:label_designer_kit/label_designer_kit.dart' hide EdgeInsets;
+import 'package:flutter_label_designer/flutter_label_designer.dart' hide EdgeInsets;
 
 import '../export/export_dialog.dart';
 import '../library/library_entry.dart';

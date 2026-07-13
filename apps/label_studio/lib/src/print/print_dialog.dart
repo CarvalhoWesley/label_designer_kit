@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
-import 'package:label_designer_kit/label_designer_kit.dart' hide EdgeInsets;
+import 'package:flutter_label_designer/flutter_label_designer.dart' hide EdgeInsets;
 import 'package:label_print_transport_windows/label_print_transport_windows.dart';
 
 import '../common/live_preview.dart';

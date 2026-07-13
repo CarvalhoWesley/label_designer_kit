@@ -1,5 +1,5 @@
 /// Ponto de entrada único para um projeto Flutter consumidor: uma
-/// dependência (`label_designer_kit`) em vez de uma por pacote. Ver
+/// dependência (`flutter_label_designer`) em vez de uma por pacote. Ver
 /// `docs/INTEGRATION.md` e `docs/ARCHITECTURE.md`, seção 20.
 ///
 /// Reexporta exatamente a superfície pública que a arquitetura já definia

@@ -2,14 +2,14 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:label_designer_kit/label_designer_kit.dart' hide EdgeInsets;
+import 'package:flutter_label_designer/flutter_label_designer.dart' hide EdgeInsets;
 
 /// A debounced `LabelDocument` -> `LabelLayoutEngine` -> `CanvasRenderer` ->
 /// `Image.memory` preview, local to this app.
 ///
 /// This deliberately re-implements the same small pattern as
 /// `packages/label_preview` instead of depending on that package directly:
-/// `label_designer_kit`'s barrel (see its doc comment) exposes exactly
+/// `flutter_label_designer`'s barrel (see its doc comment) exposes exactly
 /// `LabelLayoutEngine` and `CanvasRenderer` as the intended way for a
 /// consuming app to build its own previews, and reserves `label_preview`
 /// itself as an internal implementation detail of `label_designer`. Staying

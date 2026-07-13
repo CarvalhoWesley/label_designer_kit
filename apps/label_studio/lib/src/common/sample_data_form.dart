@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:label_designer_kit/label_designer_kit.dart' hide EdgeInsets;
+import 'package:flutter_label_designer/flutter_label_designer.dart' hide EdgeInsets;
 
 /// Builds one input per declared [LabelVariable] on a document, seeded with
 /// its `defaultValue`, and reports the whole data map back on every change

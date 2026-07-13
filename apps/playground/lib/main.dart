@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart' hide EdgeInsets;
-import 'package:label_designer_kit/label_designer_kit.dart';
+import 'package:flutter_label_designer/flutter_label_designer.dart';
 
 void main() => runApp(const PlaygroundApp());
 

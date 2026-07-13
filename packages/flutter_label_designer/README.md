@@ -1,12 +1,12 @@
-# label_designer_kit
+# flutter_label_designer
 
 Pacote guarda-chuva: uma única dependência que reexporta toda a API pública de que um projeto consumidor precisa. Ver [docs/INTEGRATION.md](../../docs/INTEGRATION.md) e [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md), seção 20.
 
 ## Por quê
 
-A arquitetura deste workspace é modular de propósito (cada pacote com uma responsabilidade única, ver `docs/ARCHITECTURE.md`) — ótimo para manter o código organizado, mas isso significa que, sem este pacote, um projeto consumidor precisaria declarar 6-8 dependências `path:`/`git:` separadas (`label_core`, `label_designer`, `label_layout_engine`, `label_renderer_pdf`, `label_renderer_argox`, `label_serialization`, ...) só para usar o editor e exportar uma etiqueta. `label_designer_kit` existe só para isso: uma dependência, um import.
+A arquitetura deste workspace é modular de propósito (cada pacote com uma responsabilidade única, ver `docs/ARCHITECTURE.md`) — ótimo para manter o código organizado, mas isso significa que, sem este pacote, um projeto consumidor precisaria declarar 6-8 dependências `path:`/`git:` separadas (`label_core`, `label_designer`, `label_layout_engine`, `label_renderer_pdf`, `label_renderer_argox`, `label_serialization`, ...) só para usar o editor e exportar uma etiqueta. `flutter_label_designer` existe só para isso: uma dependência, um import.
 
-Isso **não substitui** os pacotes individuais — eles continuam existindo e podem ser usados diretamente por quem quiser controle fino (por exemplo, um app que só precisa do `label_renderer_pdf` sem o editor visual). `label_designer_kit` é uma camada de conveniência por cima, não uma mudança na arquitetura interna.
+Isso **não substitui** os pacotes individuais — eles continuam existindo e podem ser usados diretamente por quem quiser controle fino (por exemplo, um app que só precisa do `label_renderer_pdf` sem o editor visual). `flutter_label_designer` é uma camada de conveniência por cima, não uma mudança na arquitetura interna.
 
 ## O que está incluído
 
@@ -26,12 +26,12 @@ Isso **não substitui** os pacotes individuais — eles continuam existindo e po
 ```yaml
 # pubspec.yaml do seu projeto
 dependencies:
-  label_designer_kit:
-    path: ../label_designer_workspace/packages/label_designer_kit
+  flutter_label_designer:
+    path: ../label_designer_workspace/packages/flutter_label_designer
 ```
 
 ```dart
-import 'package:label_designer_kit/label_designer_kit.dart';
+import 'package:flutter_label_designer/flutter_label_designer.dart';
 
 // Editor:
 LabelDesigner(document: meuDocumento, onSave: minhaFuncaoDeSalvar)
@@ -49,7 +49,7 @@ final pplaBytes = await const ArgoxRenderer().render(resolved, const ArgoxRender
 
 ```dart
 import 'package:flutter/material.dart' hide EdgeInsets;
-import 'package:label_designer_kit/label_designer_kit.dart';
+import 'package:flutter_label_designer/flutter_label_designer.dart';
 ```
 
 (é o mesmo workaround que `label_designer` já usa internamente — não é algo novo introduzido por este pacote.)
@@ -60,4 +60,4 @@ import 'package:label_designer_kit/label_designer_kit.dart';
 flutter test
 ```
 
-`test/label_designer_kit_test.dart` prova que o barrel sozinho — sem nenhum outro import de pacote — já é suficiente para embutir `LabelDesigner` e rodar o pipeline completo (serializar → resolver → renderizar em PDF, PNG e PPLA). Se uma mudança futura em qualquer pacote interno reduzir o que este barrel reexporta, esse teste quebra aqui em vez de silenciosamente quebrar todo consumidor.
+`test/flutter_label_designer_test.dart` prova que o barrel sozinho — sem nenhum outro import de pacote — já é suficiente para embutir `LabelDesigner` e rodar o pipeline completo (serializar → resolver → renderizar em PDF, PNG e PPLA). Se uma mudança futura em qualquer pacote interno reduzir o que este barrel reexporta, esse teste quebra aqui em vez de silenciosamente quebrar todo consumidor.

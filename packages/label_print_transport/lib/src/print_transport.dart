@@ -8,7 +8,7 @@ import 'dart:typed_data';
 /// print transport. It deliberately knows nothing about `LabelDocument`,
 /// `ResolvedDocument` or any `label_renderer_*` — it only moves bytes. See
 /// `docs/ARCHITECTURE.md` and `docs/ROADMAP.md` etapa 20 for why this is a
-/// separate package from `label_designer_kit`'s domain packages, consumed
+/// separate package from `flutter_label_designer`'s domain packages, consumed
 /// only by the app doing the actual printing.
 ///
 /// `send()` is deliberately stateless — no `connect()`/`disconnect()` — a
