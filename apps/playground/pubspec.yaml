@@ -7,7 +7,7 @@ description: >
   externo usaria (ver docs/INTEGRATION.md). Não é um entregável — o
   projeto do usuário nunca importa este pacote. Ver docs/ARCHITECTURE.md,
   seção 4, e docs/ROADMAP.md, etapa 17.
-version: 0.1.0
+version: 1.0.0
 publish_to: none
 
 environment:

@@ -3,7 +3,7 @@ description: >
   Parser e avaliador desacoplado de expressões ({{ preco * quantidade }},
   {{ estoque == 0 ? "SEM ESTOQUE" : "" }}, {{ data.format("dd/MM/yyyy") }}).
   Pacote Dart puro, sem dependência de label_core, Flutter ou impressoras.
-version: 0.1.0
+version: 1.0.0
 publish_to: none
 
 environment:

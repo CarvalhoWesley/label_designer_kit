@@ -4,7 +4,7 @@ description: >
   propriedades, preview e atalhos de teclado, ligados a
   label_designer_state. Não sabe salvar em disco nem imprimir — isso é do
   projeto que consome este pacote. Ver docs/ARCHITECTURE.md, seção 7.
-version: 0.1.0
+version: 1.0.0
 publish_to: none
 
 environment:

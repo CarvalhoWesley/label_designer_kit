@@ -4,7 +4,7 @@ description: >
   zoom/pan, grid/snap. Desenha uma representação editável direta do
   LabelDocument — nunca usa label_layout_engine nem nenhum
   label_renderer_*. Ver docs/ARCHITECTURE.md, seção 15.
-version: 0.1.0
+version: 1.0.0
 publish_to: none
 
 environment:

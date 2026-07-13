@@ -3,7 +3,7 @@ description: >
   Stores MobX que orquestram documento, seleção, histórico, camadas e
   viewport do editor. Pacote Dart puro, sem dependência de Flutter — apenas
   reativo via mobx. Ver docs/ARCHITECTURE.md, seção 14.
-version: 0.1.0
+version: 1.0.0
 publish_to: none
 
 environment:

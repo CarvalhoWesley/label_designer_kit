@@ -4,7 +4,7 @@ description: >
   semânticos. Componentes puramente visuais — não conhece LabelDocument
   nem nenhum store de label_designer_state. Ver docs/ARCHITECTURE.md,
   seção 7.
-version: 0.1.0
+version: 1.0.0
 publish_to: none
 
 environment:

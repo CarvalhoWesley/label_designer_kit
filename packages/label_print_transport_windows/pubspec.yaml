@@ -5,7 +5,7 @@ description: >
   e impressão de PDF pelo driver instalado). Windows-only por natureza —
   ver docs/ROADMAP.md, etapa 20, para os backends irmãos planejados
   (rede/TCP, serial) que não dependem deste pacote.
-version: 0.1.0
+version: 1.0.0
 publish_to: none
 
 environment:

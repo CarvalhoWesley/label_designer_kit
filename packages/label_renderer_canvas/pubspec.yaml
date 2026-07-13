@@ -3,7 +3,7 @@ description: >
   Renderer que converte um ResolvedDocument em PNG/JPEG, usando dart:ui
   para tipografia real (TTF, negrito/itálico). Usado tanto para
   exportação raster quanto como base do preview do editor.
-version: 0.1.0
+version: 1.0.0
 publish_to: none
 
 environment:

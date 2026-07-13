@@ -3,7 +3,7 @@ description: >
   Modelos de domínio do Label Designer Framework: LabelDocument, LabelElement
   e subtipos, value objects de geometria e unidades. Pacote Dart puro, sem
   dependência de Flutter, impressoras ou renderização.
-version: 0.1.0
+version: 1.0.0
 publish_to: none
 
 environment:

@@ -3,7 +3,7 @@ description: >
   Command Pattern e undo/redo sobre LabelDocument. Cada Command produz uma
   nova versão imutável do documento via copyWith; nunca muta o documento
   em lugar. Pacote Dart puro, sem dependência de Flutter ou MobX.
-version: 0.1.0
+version: 1.0.0
 publish_to: none
 
 environment:

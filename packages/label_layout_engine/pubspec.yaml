@@ -4,7 +4,7 @@ description: >
   DPI, rotações e grupos, produzindo um ResolvedDocument pronto para
   qualquer LabelRenderer. Pacote Dart puro; nenhum renderer recalcula
   layout.
-version: 0.1.0
+version: 1.0.0
 publish_to: none
 
 environment:

@@ -6,7 +6,7 @@ description: >
   de comandos nativos por elemento — contorna as limitações de fonte/forma
   do PPLA nativo (ver label_renderer_argox). Pacote de composição: depende
   de label_renderer_argox e label_renderer_canvas, sem alterá-los.
-version: 0.1.0
+version: 1.0.0
 publish_to: none
 
 environment:

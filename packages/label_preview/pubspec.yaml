@@ -4,7 +4,7 @@ description: >
   Image.memory. Usa exatamente o mesmo motor de layout e o mesmo renderer
   usados na exportação PNG/JPEG, então o preview nunca diverge do
   resultado real de impressão. Ver docs/ARCHITECTURE.md, seção 16.
-version: 0.1.0
+version: 1.0.0
 publish_to: none
 
 environment:

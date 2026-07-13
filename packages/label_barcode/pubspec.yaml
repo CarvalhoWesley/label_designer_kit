@@ -4,7 +4,7 @@ description: >
   desenhar nada) para os renderers do Label Designer Framework. Adapta
   package:barcode por trás de uma interface própria (Adapter pattern),
   trocável sem afetar consumidores.
-version: 0.1.0
+version: 1.0.0
 publish_to: none
 
 environment:

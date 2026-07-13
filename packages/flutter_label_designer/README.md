@@ -1,63 +1,109 @@
 # flutter_label_designer
 
-Pacote guarda-chuva: uma única dependência que reexporta toda a API pública de que um projeto consumidor precisa. Ver [docs/INTEGRATION.md](../../docs/INTEGRATION.md) e [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md), seção 20.
+[![pub package](https://img.shields.io/pub/v/flutter_label_designer.svg)](https://pub.dev/packages/flutter_label_designer)
 
-## Por quê
+Editor visual de etiquetas para Flutter, com motor de layout, serialização e renderers prontos (PDF, PNG, PPLA/Argox) — tudo atrás de uma única dependência.
 
-A arquitetura deste workspace é modular de propósito (cada pacote com uma responsabilidade única, ver `docs/ARCHITECTURE.md`) — ótimo para manter o código organizado, mas isso significa que, sem este pacote, um projeto consumidor precisaria declarar 6-8 dependências `path:`/`git:` separadas (`label_core`, `label_designer`, `label_layout_engine`, `label_renderer_pdf`, `label_renderer_argox`, `label_serialization`, ...) só para usar o editor e exportar uma etiqueta. `flutter_label_designer` existe só para isso: uma dependência, um import.
+## Features
 
-Isso **não substitui** os pacotes individuais — eles continuam existindo e podem ser usados diretamente por quem quiser controle fino (por exemplo, um app que só precisa do `label_renderer_pdf` sem o editor visual). `flutter_label_designer` é uma camada de conveniência por cima, não uma mudança na arquitetura interna.
+- **`LabelDesigner`** — widget de editor visual completo (canvas, camadas, painel de propriedades).
+- **`LabelLayoutEngine`** — resolve variáveis, expressões e unidades de um `LabelDocument` para um DPI alvo.
+- **Renderers prontos**:
+  - `PdfRenderer` — saída PDF vetorial.
+  - `CanvasRenderer` — saída PNG/raster (preview e export).
+  - `ArgoxRenderer` — comandos PPLA para impressoras Argox.
+  - `ArgoxRasterRenderer` — variante do backend PPLA que rasteriza a etiqueta inteira em vez de emitir comandos nativos por elemento, contornando limites de fonte/forma do PPLA nativo ao custo de um job maior.
+- **`LabelDocumentCodec`** — serializa/desserializa documentos `.label` (JSON).
+- **`LabelRenderer`/`RendererOptions`/`BaseRenderer`** — contrato Template Method para quem quiser escrever um renderer de impressora próprio.
 
-## O que está incluído
+Este é um pacote guarda-chuva: reexporta a API pública de um conjunto de pacotes internos por trás de uma única dependência, para não obrigar o projeto consumidor a declarar 6-8 dependências separadas. Os pacotes individuais continuam existindo para quem quiser controle fino (por exemplo, um serviço headless que só precisa de um renderer, sem o editor visual).
 
-| Pacote | Para quê |
-|---|---|
-| `label_core` | `LabelDocument` e o modelo de domínio |
-| `label_designer` | o widget `LabelDesigner` (editor visual completo) |
-| `label_layout_engine` | `LabelLayoutEngine.resolve(document, data)` |
-| `label_renderer` | o contrato `LabelRenderer`/`RendererOptions` e `BaseRenderer` (só necessário se você for escrever um renderer próprio) |
-| `label_renderer_pdf`, `label_renderer_canvas`, `label_renderer_argox` | os backends de saída prontos: PDF vetorial, PNG raster, comandos PPLA (Argox) |
-| `label_serialization` | `LabelDocumentCodec`, para persistir/carregar `.label` |
+## Getting started
 
-**Não incluído** (detalhe de implementação de `label_designer`, nunca foi pensado para uso direto pelo consumidor): `label_canvas`, `label_designer_state`, `label_preview`, `label_property_panel`, `label_widgets`, `label_history`, `label_expression_engine`, `label_barcode`.
-
-## Uso
+Requer Flutter `>=3.32.0` e Dart SDK `^3.8.1`.
 
 ```yaml
-# pubspec.yaml do seu projeto
 dependencies:
-  flutter_label_designer:
-    path: ../label_designer_workspace/packages/flutter_label_designer
+  flutter_label_designer: ^1.0.0
 ```
+
+ou
+
+```
+flutter pub add flutter_label_designer
+```
+
+## Usage
+
+### Embutir o editor
+
+`LabelDesigner` é um widget comum — não gerencia navegação nem faz I/O. Recebe um `LabelDocument` e devolve o documento editado via `onSave`; persistir em disco/banco é responsabilidade da tela que o embute.
+
+```dart
+import 'package:flutter/material.dart' hide EdgeInsets; // ver "armadilha conhecida" abaixo
+import 'package:flutter_label_designer/flutter_label_designer.dart';
+
+class MinhaTelaDeEdicao extends StatelessWidget {
+  const MinhaTelaDeEdicao({super.key, required this.documento});
+
+  final LabelDocument documento;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: LabelDesigner(
+        document: documento,
+        onSave: (documentoEditado) {
+          meuRepositorio.salvar(documentoEditado);
+        },
+      ),
+    );
+  }
+}
+```
+
+### Resolver e renderizar (exportar/imprimir)
+
+`LabelDocument` não sabe nada sobre impressoras ou pixels: `LabelLayoutEngine` resolve variáveis/expressões/unidades para o DPI alvo, e um renderer converte o layout resolvido em bytes de saída. Nenhum renderer recalcula layout — todos recebem o mesmo `ResolvedDocument`.
 
 ```dart
 import 'package:flutter_label_designer/flutter_label_designer.dart';
 
-// Editor:
-LabelDesigner(document: meuDocumento, onSave: minhaFuncaoDeSalvar)
-
-// Exportar/imprimir:
 const layoutEngine = LabelLayoutEngine();
-final resolved = layoutEngine.resolve(documento, dados);
+final resolved = layoutEngine.resolve(documento, {
+  'produto': 'Parafuso Sextavado M6',
+  'preco': 3.9,
+  'codigo': 'PROD-000123',
+});
+
+// PDF (conferência visual, e-mail, arquivo):
 final pdfBytes = await const PdfRenderer().render(resolved, const PdfRendererOptions());
-final pplaBytes = await const ArgoxRenderer().render(resolved, const ArgoxRendererOptions());
+
+// PNG (preview):
+final pngBytes = await const CanvasRenderer().render(resolved, const CanvasRendererOptions());
+
+// PPLA (impressora Argox):
+final pplaBytes = await const ArgoxRenderer().render(
+  resolved,
+  const ArgoxRendererOptions(darkness: 12, copies: 1),
+);
 ```
 
-## Armadilha conhecida: `EdgeInsets`
+Este pacote entrega apenas bytes já codificados — o transporte até a saída física (arquivo, e-mail, socket TCP na porta 9100, USB, Bluetooth) é responsabilidade do projeto consumidor.
 
-`label_core.EdgeInsets` (margens em milímetros) e `flutter/material.dart`'s `EdgeInsets` têm o mesmo nome. Se o seu arquivo importar os dois, esconda um deles:
+### Armadilha conhecida: `EdgeInsets`
+
+`LabelDocument`'s `EdgeInsets` (margens em milímetros) e `flutter/material.dart`'s `EdgeInsets` têm o mesmo nome. Se o seu arquivo importar os dois, esconda um deles:
 
 ```dart
 import 'package:flutter/material.dart' hide EdgeInsets;
 import 'package:flutter_label_designer/flutter_label_designer.dart';
 ```
 
-(é o mesmo workaround que `label_designer` já usa internamente — não é algo novo introduzido por este pacote.)
+## Additional information
 
-## Testes
+`test/flutter_label_designer_test.dart` prova que o barrel sozinho — sem nenhum outro import de pacote — é suficiente para embutir `LabelDesigner` e rodar o pipeline completo (serializar → resolver → renderizar em PDF, PNG e PPLA). Rode com:
 
 ```
 flutter test
 ```
-
-`test/flutter_label_designer_test.dart` prova que o barrel sozinho — sem nenhum outro import de pacote — já é suficiente para embutir `LabelDesigner` e rodar o pipeline completo (serializar → resolver → renderizar em PDF, PNG e PPLA). Se uma mudança futura em qualquer pacote interno reduzir o que este barrel reexporta, esse teste quebra aqui em vez de silenciosamente quebrar todo consumidor.

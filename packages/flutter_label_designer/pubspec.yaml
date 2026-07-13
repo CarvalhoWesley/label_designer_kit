@@ -1,10 +1,9 @@
 name: flutter_label_designer
 description: >
-  Pacote guarda-chuva: reexporta toda a API pública que um projeto
-  consumidor precisa (editor, motor de layout, serialização e renderers)
-  atrás de uma única dependência. Ver docs/ARCHITECTURE.md, seção 20, e
-  docs/INTEGRATION.md.
-version: 0.1.0
+  Editor visual de etiquetas para Flutter, com motor de layout,
+  serialização e renderers prontos (PDF, PNG, PPLA/Argox) atrás de uma
+  única dependência.
+version: 1.0.0
 publish_to: none
 
 environment:

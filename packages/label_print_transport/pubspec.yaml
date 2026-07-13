@@ -4,7 +4,7 @@ description: >
   (PPLA, PDF, ...) a uma impressora física, sem conhecer LabelDocument nem
   nenhum renderer. Pacote Dart puro — nenhuma implementação concreta aqui,
   só a interface. Ver docs/ARCHITECTURE.md e docs/ROADMAP.md, etapa 20.
-version: 0.1.0
+version: 1.0.0
 publish_to: none
 
 environment:

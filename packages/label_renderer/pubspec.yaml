@@ -3,7 +3,7 @@ description: >
   Contrato LabelRenderer/RendererOptions implementado por cada backend de
   saída (label_renderer_canvas, label_renderer_pdf, label_renderer_argox,
   ...). Pacote Dart puro — nenhuma implementação concreta aqui.
-version: 0.1.0
+version: 1.0.0
 publish_to: none
 
 environment:

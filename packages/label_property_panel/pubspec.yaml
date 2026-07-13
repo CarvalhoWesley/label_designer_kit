@@ -3,7 +3,7 @@ description: >
   Painel de propriedades: edição reativa dos campos do(s) elemento(s)
   selecionado(s), ligada a PropertyStore/DocumentStore/SelectionStore. Não
   calcula layout. Ver docs/ARCHITECTURE.md, seção 7.
-version: 0.1.0
+version: 1.0.0
 publish_to: none
 
 environment:

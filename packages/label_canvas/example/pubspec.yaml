@@ -5,7 +5,7 @@ description: >
   redimensionar, girar, zoom/pan e grid/snap durante o desenvolvimento.
   Não é código destinado ao usuário final.
 publish_to: none
-version: 0.1.0
+version: 1.0.0
 
 environment:
   sdk: ^3.8.1

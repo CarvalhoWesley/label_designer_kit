@@ -3,7 +3,7 @@ description: >
   Renderer que converte um ResolvedDocument em PDF vetorial (texto real,
   formas e código de barras/QR como paths, não bitmap), usando package:pdf.
   Dart puro, diferente de label_renderer_canvas.
-version: 0.1.0
+version: 1.0.0
 publish_to: none
 
 environment:
